@@ -1,0 +1,461 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#1f3b66">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="名盤100">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+<link rel="manifest" href="manifest.webmanifest">
+<title>名盤100枚</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Old+Mincho:wght@600;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: 名作映画100本と同じ1列の作り。上に洋楽／邦楽のタブ、その下に進み具合と年代ごとの棚。 */
+:root {
+  padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px);
+  --bg: #f5f6f8;
+  --surface: #ffffff;
+  --ink: #1b2233;
+  --muted: #667086;
+  --line: #e0e4eb;
+  --accent: #27467a;
+  --accent-soft: #e2e9f4;
+  --gold: #b88a2c;
+  --done: #2f7a54;
+  --done-soft: #e2f1e8;
+  --f-display: "Zen Old Mincho", "Hiragino Mincho ProN", "Yu Mincho", serif;
+  --f-body: "Zen Kaku Gothic New", "Hiragino Sans", "Yu Gothic", system-ui, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #11151d; --surface: #1a2030; --ink: #e8ebf2; --muted: #9aa2b4; --line: #2a3243;
+    --accent: #8fb0e6; --accent-soft: #212d45; --gold: #e0b55a; --done: #6cc496; --done-soft: #1b3226; color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.6; }
+[hidden] { display: none !important; }
+.wrap { max-width: 640px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 20px 48px; display: grid; gap: 28px; }
+header { display: grid; gap: 14px; }
+h1 { font-family: var(--f-display); font-weight: 700; font-size: 1.9rem; line-height: 1.2; margin: 0; text-wrap: balance; letter-spacing: .02em; }
+.tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 0; background: var(--line); border-radius: 12px; padding: 4px; position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; }
+.tab { all: unset; box-sizing: border-box; text-align: center; padding: 9px 8px; border-radius: 9px; cursor: pointer; font-weight: 700; color: var(--muted); display: grid; gap: 0; }
+.tab small { font-family: var(--f-mono); font-weight: 500; font-size: .75rem; font-variant-numeric: tabular-nums; }
+.tab[aria-selected="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+.tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.count { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.count b { font-family: var(--f-mono); font-weight: 500; font-size: 2.4rem; line-height: 1; font-variant-numeric: tabular-nums; }
+.count span { color: var(--muted); font-size: .9rem; }
+.bar { height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; }
+.bar i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .3s ease; }
+.next { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; display: grid; gap: 2px; }
+.next small { font-size: .72rem; letter-spacing: .12em; color: var(--accent); font-weight: 700; }
+.next strong { font-family: var(--f-display); font-size: 1.25rem; font-weight: 700; }
+.next em { font-style: normal; color: var(--muted); font-size: .85rem; }
+.next .warn { color: var(--gold); font-size: .8rem; font-weight: 500; }
+.status { font-size: .82rem; color: var(--muted); margin: 0; }
+.status[data-kind="warn"] { color: var(--gold); }
+.tools { display: flex; gap: 8px; flex-wrap: wrap; }
+.chip { font: inherit; font-size: .85rem; border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 999px; padding: 6px 14px; cursor: pointer; }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.chip:focus-visible, .rec:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+section { display: grid; gap: 10px; }
+.sec-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; border-bottom: 2px solid var(--ink); padding-bottom: 6px; }
+.sec-head h2 { font-family: var(--f-display); font-size: 1.3rem; margin: 0; font-weight: 700; }
+.sec-head h2 span { font-family: var(--f-body); font-size: .8rem; font-weight: 500; color: var(--muted); margin-left: 8px; }
+.sec-head .n { font-family: var(--f-mono); font-size: .9rem; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+ul { list-style: none; margin: 0; padding: 0; display: grid; }
+li + li { border-top: 1px dashed var(--line); }
+.row { display: grid; grid-template-columns: 26px 1fr; gap: 12px; align-items: start; padding: 12px 4px; }
+.rec { all: unset; box-sizing: border-box; display: grid; place-items: center; width: 26px; height: 26px; cursor: pointer; border-radius: 50%; margin-top: 1px; }
+.disc { width: 22px; height: 22px; border: 2px solid var(--muted); border-radius: 50%; display: grid; place-items: center; transition: background .15s, border-color .15s; }
+.disc svg { width: 14px; height: 14px; opacity: 0; }
+.rec[aria-checked="true"] .disc { background: var(--done); border-color: var(--done); }
+.rec[aria-checked="true"] .disc svg { opacity: 1; }
+.t { font-weight: 700; font-size: 1rem; }
+.a { font-size: .88rem; font-weight: 500; }
+.row.is-done .t { color: var(--muted); text-decoration: line-through; text-decoration-color: var(--muted); }
+.sub { font-size: .8rem; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 10px; }
+.sub .y { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+.sub .w { color: var(--done); font-weight: 500; }
+.sub .nos { color: var(--gold); font-weight: 500; }
+.first { font-size: .8rem; color: var(--muted); }
+.first b { color: var(--ink); font-weight: 500; }
+.row.is-next .t::after { content: "次はこれ"; font-size: .68rem; font-weight: 700; color: var(--accent); background: var(--accent-soft); border-radius: 4px; padding: 1px 6px; margin-left: 8px; vertical-align: 2px; }
+details { min-width: 0; }
+summary { list-style: none; cursor: pointer; display: grid; gap: 1px; border-radius: 6px; }
+summary::-webkit-details-marker { display: none; }
+summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.more { font-size: .75rem; color: var(--accent); font-weight: 500; }
+details[open] .more::after { content: "（とじる）"; }
+.tag { font-size: .72rem; border: 1px solid var(--line); border-radius: 4px; padding: 0 6px; line-height: 1.6; }
+.tag.hard { border-color: var(--gold); color: var(--gold); }
+.notes { display: grid; gap: 12px; margin: 8px 0 0; padding: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; font-size: .88rem; }
+.notes dt { font-size: .7rem; font-weight: 700; letter-spacing: .1em; color: var(--muted); }
+.notes dd { margin: 0; line-height: 1.75; }
+.pts { display: grid; gap: 4px; padding-left: 1.1em; margin: 0; list-style: disc; }
+.pts li + li { border-top: 0; }
+.empty { color: var(--muted); font-size: .9rem; padding: 8px 4px; }
+footer { color: var(--muted); font-size: .8rem; display: grid; gap: 6px; }
+footer p { margin: 0; }
+.rank { display: grid; gap: 6px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+.rank-top { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.rank-name { font-family: var(--f-display); font-weight: 700; font-size: 1.2rem; }
+.rank-name small { font-family: var(--f-body); font-size: .72rem; letter-spacing: .1em; color: var(--muted); font-weight: 700; margin-right: 8px; }
+.rank-next { font-size: .8rem; color: var(--muted); }
+.stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.stat { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; display: grid; }
+.stat b { font-family: var(--f-mono); font-weight: 500; font-size: 1.25rem; font-variant-numeric: tabular-nums; }
+.stat span { font-size: .72rem; color: var(--muted); }
+.gacha { font: inherit; font-weight: 700; font-size: .9rem; border: 0; border-radius: 999px; padding: 8px 16px; cursor: pointer; background: var(--accent); color: var(--bg); }
+.gacha:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.badges { display: grid; gap: 8px; }
+.badges h2 { font-family: var(--f-display); font-size: 1.1rem; margin: 0; }
+.badges .sub2 { font-size: .8rem; color: var(--muted); margin: 0; }
+.bgrid { display: flex; flex-wrap: wrap; gap: 6px; }
+.badge { font-size: .78rem; border-radius: 999px; padding: 4px 10px; border: 1px dashed var(--line); color: var(--muted); }
+.badge.got { border: 1px solid var(--done); background: var(--done-soft); color: var(--done); font-weight: 700; }
+.badge.new { animation: pop .6s ease; }
+@keyframes pop { 0% { transform: scale(.6); } 60% { transform: scale(1.15); } 100% { transform: scale(1); } }
+.rec[aria-checked="true"] .disc { animation: pop .35s ease; }
+#fx { position: fixed; inset: 0; pointer-events: none; z-index: 50; width: 100%; height: 100%; }
+#toast { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%) translateY(20px); opacity: 0; transition: opacity .25s, transform .25s; z-index: 60; background: var(--ink); color: var(--bg); border-radius: 14px; padding: 12px 18px; max-width: min(92vw, 420px); text-align: center; font-weight: 700; display: grid; gap: 2px; box-shadow: 0 8px 24px rgba(0,0,0,.25); }
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+#toast small { font-weight: 500; font-size: .8rem; opacity: .85; }
+#toast.big { background: var(--accent); color: var(--bg); font-size: 1.1rem; }
+@media (prefers-reduced-motion: reduce) { .bar i, .disc { transition: none; } .badge.new, .rec[aria-checked="true"] .disc { animation: none; } #toast { transition: none; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>名盤100枚</h1>
+    <div class="tabs" role="tablist" aria-label="洋楽と邦楽">
+      <button class="tab" role="tab" id="tab-yogaku" type="button" aria-selected="true">洋楽<small id="tabn-yogaku">0／100</small></button>
+      <button class="tab" role="tab" id="tab-hogaku" type="button" aria-selected="false">邦楽<small id="tabn-hogaku">0／100</small></button>
+    </div>
+    <div class="count"><b id="done">0</b><span>／100枚 聴いた</span><span id="left"></span></div>
+    <div class="bar" aria-hidden="true"><i id="barfill"></i></div>
+    <div class="rank" id="rank"></div>
+    <div class="stats" id="stats"></div>
+    <div class="next" id="next"></div>
+    <div class="tools"><button class="gacha" id="gacha" type="button">迷ったら：今日の1枚を引く</button></div>
+    <p class="status" id="status" hidden></p>
+    <div class="tools">
+      <button class="chip" id="hideDone" type="button" aria-pressed="false">聴いたアルバムをかくす</button>
+      <button class="chip" id="copyRec" type="button">記録をコピー（クロコに渡す）</button>
+    </div>
+    <textarea id="recBox" hidden rows="6" style="width:100%;font:inherit;font-size:.85rem" aria-label="記録"></textarea>
+  </header>
+  <section class="badges" id="badges"></section>
+  <main id="groups" role="tabpanel" style="display:grid;gap:28px"></main>
+  <canvas id="fx" aria-hidden="true"></canvas>
+  <div id="toast" role="status" aria-live="polite"></div>
+  <footer>
+    <p>上のタブで洋楽と邦楽を切り替えます。記録はタブごとに別々です。左の丸をタップすると「聴いた」になり、もう一度タップで戻ります。チェックはこのスマホのブラウザの中に保存されます（別のスマホやブラウザには引き継がれません）。ときどき「記録をコピー」でクロコに渡してください（洋楽と邦楽の両方がまとめてコピーされます）。</p>
+    <p>並びは発売順です。上から順に聴くと、前のアルバムが次のアルバムにどう影響したかが分かるようにしてあります。タイトルをタップすると聴く前のメモが開きます。</p>
+    <p>メモと収録時間はクロコが書いた目安です（デラックス版やリマスター版は曲が増えて長くなります）。批評家の評価やよく言われる感想として知っていることから書いたもので、レビューサイトを直接読んだものではありません。</p>
+    <p>配信は 2026-11-05 時点の目安です。ほとんどは Spotify・Apple Music・Amazon Music にありますが、山下達郎のように定額配信をしていない人もいます。その場合は黄色い注意書きを付けています。</p>
+  </footer>
+</div>
+
+<script src="yogaku.js"></script>
+<script src="hogaku.js"></script>
+<script>
+// ---- 2つの棚（タブ）の定義 ----
+const SHELVES = {
+  yogaku: {
+    key: "yogaku", name: "洋楽", data: YOGAKU, store: "meiban100-yogaku-v1",
+    eras: [["1960年代", "ロックがアルバムで語り始めた", 0, 1969], ["1970年代", "ハードロック、ソウル、パンク", 1970, 1979], ["1980年代", "MTV、メタル、ヒップホップの台頭", 1980, 1989], ["1990年代", "オルタナ、ブリットポップ、サンプリング", 1990, 1999], ["2000年代以降", "インディ、R&B、配信の時代", 2000, 9999]],
+    sets: [["ビートルズ3枚", [5, 10, 15]], ["プログレ", [14, 26, 27]], ["パンク", [31, 34, 37, 41, 74]], ["ソウル", [2, 11, 18, 28, 88]], ["ヒップホップ", [55, 65, 66, 69, 92, 95]], ["ボウイの最初と最後", [24, 97]], ["オルタナ", [56, 60, 61, 62, 68]]]
+  },
+  hogaku: {
+    key: "hogaku", name: "邦楽", data: HOGAKU, store: "meiban100-hogaku-v1",
+    eras: [["1970年代", "日本語のロックとフォーク、ニューミュージック", 0, 1979], ["1980年代", "シティポップ、アイドル、バンドブーム", 1980, 1989], ["1990年代", "渋谷系、ミリオンセラー、ヴィジュアル系", 1990, 1999], ["2000年代", "歌姫、ギターロック、テクノポップ", 2000, 2009], ["2010年代以降", "配信とネットから生まれた音", 2010, 9999]],
+    sets: [["はっぴいえんど一家", [1, 3, 14, 17, 18]], ["渋谷系", [36, 38, 39, 52]], ["シティポップ", null], ["ヒップホップ", null], ["電子", null], ["フォーク", null]]
+  }
+};
+const RANKS = [[0, "見習い"], [5, "音楽好き"], [10, "リスナー"], [25, "常連"], [40, "音楽通"], [60, "ディガー"], [80, "レコード屋の主"], [100, "名盤マスター"]];
+const PRAISE = ["ナイス！", "また1枚。", "いい音だった？", "名盤を1枚ストック。", "積み上がってる。", "その調子。"];
+
+for (const sh of Object.values(SHELVES)) {
+  sh.by = Object.fromEntries(sh.data.map(x => [x.n, x]));
+  sh.order = sh.data.map(x => x.n);
+  sh.groups = sh.eras.map(([name, note, from, to]) => ({ name, note, items: sh.data.filter(x => x.y >= from && x.y <= to) }));
+  const ach = [];
+  for (const g of sh.groups) ach.push({ id: "era-" + g.name, label: `${g.name}制覇`, ks: g.items.map(x => x.n) });
+  for (const [label, ks] of sh.sets) {
+    const list = ks || sh.data.filter(x => x.g === label).map(x => x.n);
+    ach.push({ id: "set-" + label, label: ks ? `${label}コンプ` : `${label}を全部`, ks: list });
+  }
+  ach.push({ id: "long", label: "1時間超えを全部", ks: sh.order.filter(k => sh.by[k].min >= 60) });
+  ach.push({ id: "hard", label: "手ごわいを10枚", need: 10, ks: sh.order.filter(k => sh.by[k].mood === "手ごわい") });
+  ach.push({ id: "easy", label: "聴きやすいを10枚", need: 10, ks: sh.order.filter(k => sh.by[k].mood === "聴きやすい") });
+  sh.ach = ach;
+  sh.heard = {};
+  sh.gachaPick = null;
+}
+
+const $ = id => document.getElementById(id);
+const CHECK = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3.2 3L13 4.5" fill="none" stroke="var(--surface)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+function today() { const d = new Date(Date.now() + 9 * 3600e3 - 6 * 3600e3); return d.toISOString().slice(0, 10); } // JST、1日は朝6時から
+function fmt(d) { const p = String(d).split("-"); return p.length === 3 ? `${+p[1]}/${+p[2]}` : ""; }
+
+let cur = SHELVES.yogaku;
+let hideDone = false;
+const openMemo = new Set();
+let newBadges = new Set();
+try { hideDone = localStorage.getItem("meiban100-hide") === "1"; } catch (e) {}
+try { const t = localStorage.getItem("meiban100-tab"); if (SHELVES[t]) cur = SHELVES[t]; } catch (e) {}
+if (SHELVES[location.hash.slice(1)]) cur = SHELVES[location.hash.slice(1)];
+
+// ---- 保存 ----
+function load(sh) {
+  try { const v = JSON.parse(localStorage.getItem(sh.store) || "{}"); return v && typeof v === "object" ? v : {}; }
+  catch (e) { return {}; }
+}
+function save(sh) {
+  try { localStorage.setItem(sh.store, JSON.stringify(sh.heard)); return true; }
+  catch (e) { setStatus("このブラウザでは記録を保存できません（プライベートモードなど）。", "warn"); return false; }
+}
+function setStatus(msg, kind) { const s = $("status"); s.textContent = msg; s.dataset.kind = kind || ""; s.hidden = !msg; }
+
+// ---- ゲーム要素 ----
+function rankOf(c) { let r = RANKS[0]; for (const x of RANKS) if (c >= x[0]) r = x; return r; }
+function nextRank(c) { return RANKS.find(x => x[0] > c) || null; }
+function achProgress(a, w) { const got = a.ks.filter(k => w[k]).length; const need = a.need || a.ks.length; return { got: Math.min(got, need), need, done: got >= need }; }
+function weekKey(d) { const t = new Date(d + "T00:00:00Z"); const day = (t.getUTCDay() + 6) % 7; t.setUTCDate(t.getUTCDate() - day); return t.toISOString().slice(0, 10); }
+function stats(sh) {
+  const w = sh.heard, ks = Object.keys(w);
+  const minutes = ks.reduce((a, k) => a + ((sh.by[k] || {}).min || 0), 0);
+  // 連続週は洋楽・邦楽どちらかを聴いた週で数える
+  const all = Object.values(SHELVES).flatMap(s => Object.values(s.heard)).filter(Boolean);
+  const thisWeek = weekKey(today());
+  const weeks = new Set(all.map(weekKey));
+  let streak = 0; const c = new Date(thisWeek + "T00:00:00Z");
+  if (!weeks.has(thisWeek)) c.setUTCDate(c.getUTCDate() - 7);
+  while (weeks.has(c.toISOString().slice(0, 10))) { streak++; c.setUTCDate(c.getUTCDate() - 7); }
+  const week = all.filter(d => weekKey(d) === thisWeek).length;
+  return { count: ks.length, minutes, week, streak };
+}
+function snapshot(sh) { const w = { ...sh.heard }; const c = Object.keys(w).length; return { count: c, rank: rankOf(c)[1], ach: new Set(sh.ach.filter(a => achProgress(a, w).done).map(a => a.id)) }; }
+
+// ---- 描画 ----
+function render() {
+  const sh = cur;
+  for (const s of Object.values(SHELVES)) {
+    const on = s === sh;
+    $("tab-" + s.key).setAttribute("aria-selected", on ? "true" : "false");
+    $("tabn-" + s.key).textContent = `${Object.keys(s.heard).length}／100`;
+  }
+  const n = Object.keys(sh.heard).length;
+  $("done").textContent = n;
+  $("barfill").style.width = n + "%";
+  const leftMin = sh.order.filter(k => !sh.heard[k]).reduce((a, k) => a + sh.by[k].min, 0);
+  $("left").textContent = leftMin ? `残り約${Math.round(leftMin / 60)}時間` : "";
+  if (sh.gachaPick && sh.heard[sh.gachaPick]) sh.gachaPick = null;
+  const nextN = sh.gachaPick || sh.order.find(k => !sh.heard[k]);
+  const nx = $("next"); nx.innerHTML = "";
+  if (nextN) {
+    const x = sh.by[nextN];
+    nx.append(el("small", "", sh.gachaPick ? `今日の1枚（${sh.name}ガチャ）` : `次に聴く1枚（${sh.name}）`), el("strong", "", x.t), el("em", "", `${x.y}年・${x.a}・約${x.min}分・まず「${x.first}」`));
+    if (x.s) nx.append(el("span", "warn", x.s));
+  } else {
+    nx.textContent = `${sh.name}100枚ぜんぶ聴きました。`;
+  }
+  renderGame();
+  const root = $("groups"); root.innerHTML = "";
+  root.setAttribute("aria-labelledby", "tab-" + sh.key);
+  for (const g of sh.groups) {
+    const sec = el("section");
+    const head = el("div", "sec-head");
+    const h2 = el("h2", "", g.name); h2.append(el("span", "", g.note));
+    head.append(h2, el("div", "n", `${g.items.filter(x => sh.heard[x.n]).length}／${g.items.length}`));
+    sec.append(head);
+    const ul = el("ul");
+    for (const x of g.items) {
+      if (hideDone && sh.heard[x.n]) continue;
+      const id = sh.key + x.n;
+      const li = el("li");
+      const row = el("div", "row" + (x.n === nextN ? " is-next" : "") + (sh.heard[x.n] ? " is-done" : ""));
+      const b = el("button", "rec");
+      b.type = "button"; b.id = "rec-" + id;
+      b.setAttribute("role", "checkbox");
+      b.setAttribute("aria-checked", sh.heard[x.n] ? "true" : "false");
+      b.setAttribute("aria-label", x.t + " を聴いた");
+      const disc = el("span", "disc"); disc.innerHTML = CHECK; b.append(disc);
+      b.addEventListener("click", () => toggle(x.n));
+      const det = el("details"); det.id = "memo-" + id;
+      if (openMemo.has(id)) det.open = true;
+      det.addEventListener("toggle", () => { det.open ? openMemo.add(id) : openMemo.delete(id); });
+      const sm = el("summary");
+      const sub = el("span", "sub");
+      sub.append(el("span", "y", String(x.y)), el("span", "y", `約${x.min}分`), el("span", "tag" + (x.mood === "手ごわい" ? " hard" : ""), x.mood));
+      if (x.g) sub.append(el("span", "", x.g));
+      if (x.o) sub.append(el("span", "", x.o));
+      if (x.s) sub.append(el("span", "nos", "配信なし・要確認"));
+      if (sh.heard[x.n]) sub.append(el("span", "w", fmt(sh.heard[x.n]) + " に聴いた"));
+      const first = el("span", "first", "まず聴く1曲："); first.append(el("b", "", x.first));
+      sm.append(el("span", "t", x.t), el("span", "a", x.a), sub, first, el("span", "more", "聴く前のメモ"));
+      det.append(sm);
+      const dl = el("dl", "notes");
+      for (const [k, v] of [["ひとことで", x.pre], ["配信について", x.s], ["背景と作られた経緯", x.bg], ["どう評価されているか", x.rep], ["聴きどころ", x.pts], ["聴き方のコツ", x.tips], ["聴いたあとに考えたいこと", x.after]]) {
+        if (!v) continue;
+        const dv = el("div"); const dd = el("dd");
+        if (Array.isArray(v)) { const u = el("ul", "pts"); for (const p of v) u.append(el("li", "", p)); dd.append(u); }
+        else dd.textContent = v;
+        dv.append(el("dt", "", k), dd); dl.append(dv);
+      }
+      det.append(dl);
+      row.append(b, det); li.append(row); ul.append(li);
+    }
+    if (!ul.children.length) ul.append(el("li", "empty", "この年代は全部聴きました。"));
+    sec.append(ul); root.append(sec);
+  }
+}
+
+function renderGame() {
+  const sh = cur, st = stats(sh);
+  const r = rankOf(st.count), nr = nextRank(st.count);
+  const rk = $("rank"); rk.innerHTML = "";
+  const top = el("div", "rank-top");
+  const nm = el("div", "rank-name"); nm.append(el("small", "", `${sh.name}の称号`), document.createTextNode(r[1]));
+  top.append(nm, el("div", "rank-next", nr ? `次の「${nr[1]}」まであと${nr[0] - st.count}枚` : "100枚達成"));
+  rk.append(top);
+  const sx = $("stats"); sx.innerHTML = "";
+  for (const [v, l] of [[`${Math.floor(st.minutes / 60)}時間`, `${sh.name}を聴いた合計`], [`${st.week}枚`, "今週聴いた（両方）"], [`${st.streak}週`, "連続で聴いている週"]]) {
+    const d = el("div", "stat"); d.append(el("b", "", v), el("span", "", l)); sx.append(d);
+  }
+  const bd = $("badges"); bd.innerHTML = "";
+  const gotN = sh.ach.filter(a => achProgress(a, sh.heard).done).length;
+  bd.append(el("h2", "", `${sh.name}の実績 ${gotN}／${sh.ach.length}`), el("p", "sub2", "年代・ジャンル・つながりごとに全部聴くともらえる"));
+  const grid = el("div", "bgrid");
+  const sorted = [...sh.ach].sort((a, b) => { const pa = achProgress(a, sh.heard), pb = achProgress(b, sh.heard); return (pb.done - pa.done) || (pb.got / pb.need - pa.got / pa.need); });
+  for (const a of sorted) {
+    const pr = achProgress(a, sh.heard);
+    grid.append(el("span", "badge" + (pr.done ? " got" : "") + (newBadges.has(a.id) ? " new" : ""), pr.done ? `★ ${a.label}` : `${a.label} ${pr.got}/${pr.need}`));
+  }
+  bd.append(grid);
+  newBadges = new Set();
+}
+
+// ---- 演出 ----
+let toastTimer = null;
+function toast(main, sub, big) {
+  const t = $("toast"); t.innerHTML = "";
+  t.append(el("span", "", main)); if (sub) t.append(el("small", "", sub));
+  t.className = big ? "show big" : "show";
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.className = big ? "big" : ""; }, big ? 3800 : 2200);
+}
+function burst(x, y, big) {
+  try { if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return; } catch (e) {}
+  const cv = $("fx"); const ctx = cv.getContext("2d"); const dpr = window.devicePixelRatio || 1;
+  cv.width = innerWidth * dpr; cv.height = innerHeight * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const cols = [getComputedStyle(document.documentElement).getPropertyValue("--accent").trim() || "#27467a", "#e0b55a", "#2f7a54", "#d8573b", "#e86fa0"];
+  const N = big ? 140 : 28; const parts = [];
+  for (let i = 0; i < N; i++) {
+    const a = big ? Math.random() * Math.PI * 2 : -Math.PI / 2 + (Math.random() - .5) * 2.2;
+    const sp = (big ? 6 : 4) + Math.random() * (big ? 8 : 4);
+    parts.push({ x: big ? innerWidth / 2 : x, y: big ? innerHeight / 3 : y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, r: 3 + Math.random() * 4, c: cols[i % cols.length], rot: Math.random() * 6, life: 0 });
+  }
+  const T = big ? 110 : 55;
+  (function step() {
+    ctx.clearRect(0, 0, innerWidth, innerHeight);
+    let alive = false;
+    for (const p of parts) {
+      p.life++; if (p.life > T) continue; alive = true;
+      p.vy += .25; p.vx *= .99; p.x += p.vx; p.y += p.vy; p.rot += .2;
+      ctx.globalAlpha = 1 - p.life / T; ctx.fillStyle = p.c;
+      ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.beginPath(); ctx.arc(0, 0, p.r, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+    }
+    if (alive) requestAnimationFrame(step); else ctx.clearRect(0, 0, innerWidth, innerHeight);
+  })();
+}
+function celebrate(sh, n, before) {
+  const after = snapshot(sh);
+  const gained = [...after.ach].filter(id => !before.ach.has(id));
+  newBadges = new Set(gained);
+  const b = $("rec-" + sh.key + n);
+  const rc = b ? b.getBoundingClientRect() : { left: innerWidth / 2, top: innerHeight / 2, width: 0, height: 0 };
+  try { navigator.vibrate && navigator.vibrate(gained.length || after.rank !== before.rank ? [30, 40, 60] : 25); } catch (e) {}
+  if (after.count === 100) { burst(0, 0, true); toast(`${sh.name}100枚 聴き切った！`, "名盤マスター", true); }
+  else if (after.rank !== before.rank) { burst(0, 0, true); toast(`${sh.name}の称号アップ：${after.rank}`, `${after.count}枚目は『${sh.by[n].t}』`, true); }
+  else if (gained.length) { burst(0, 0, true); toast(`実績：${sh.ach.find(a => a.id === gained[0]).label}`, gained.length > 1 ? `ほか${gained.length - 1}つ` : `${sh.name} ${after.count}枚目`, true); }
+  else if (after.count % 10 === 0) { burst(0, 0, true); toast(`${sh.name} ${after.count}枚！`, "", true); }
+  else { burst(rc.left + rc.width / 2, rc.top + rc.height / 2, false); toast(`${sh.name} ${after.count}枚目　${PRAISE[after.count % PRAISE.length]}`, `あと${100 - after.count}枚`); }
+  renderGame();
+}
+
+// ---- 操作 ----
+function toggle(n) {
+  const sh = cur;
+  if (sh.heard[n]) { delete sh.heard[n]; save(sh); render(); return; }
+  const before = snapshot(sh);
+  sh.heard[n] = today(); save(sh); render(); celebrate(sh, n, before);
+}
+function switchTab(key, scroll) {
+  if (!SHELVES[key] || cur.key === key) return;
+  cur = SHELVES[key];
+  try { localStorage.setItem("meiban100-tab", key); } catch (e) {}
+  try { history.replaceState(null, "", "#" + key); } catch (e) {}
+  render();
+  if (scroll) window.scrollTo({ top: 0 });
+}
+for (const k of Object.keys(SHELVES)) $("tab-" + k).addEventListener("click", () => switchTab(k, false));
+window.addEventListener("hashchange", () => switchTab(location.hash.slice(1), true));
+
+$("gacha").addEventListener("click", () => {
+  const sh = cur;
+  // いま進めている年代の中から、配信で聴けるものを優先して引く
+  const g = sh.groups.find(g => g.items.some(x => !sh.heard[x.n]));
+  if (!g) return;
+  let pool = g.items.filter(x => !sh.heard[x.n] && !x.s);
+  if (!pool.length) pool = g.items.filter(x => !sh.heard[x.n]);
+  sh.gachaPick = pool[Math.floor(Math.random() * pool.length)].n;
+  render();
+  const x = sh.by[sh.gachaPick];
+  toast(`今日の1枚：${x.t}`, `${x.a}・まず「${x.first}」`);
+  const id = sh.key + sh.gachaPick;
+  const det = $("memo-" + id);
+  if (det) { det.open = true; openMemo.add(id); det.closest("li").scrollIntoView({ behavior: "smooth", block: "center" }); }
+});
+
+$("hideDone").setAttribute("aria-pressed", hideDone ? "true" : "false");
+$("hideDone").addEventListener("click", () => {
+  hideDone = !hideDone;
+  $("hideDone").setAttribute("aria-pressed", hideDone ? "true" : "false");
+  try { localStorage.setItem("meiban100-hide", hideDone ? "1" : "0"); } catch (e) {}
+  render();
+});
+
+function recordText() {
+  const out = [];
+  for (const sh of Object.values(SHELVES)) {
+    const ks = sh.order.filter(k => sh.heard[k]).sort((a, b) => (sh.heard[a] < sh.heard[b] ? -1 : sh.heard[a] > sh.heard[b] ? 1 : 0));
+    out.push(ks.length ? `名盤100枚・${sh.name}の記録（${ks.length}枚）\n` + ks.map(k => `${sh.heard[k]} #${k} ${sh.by[k].t}／${sh.by[k].a}`).join("\n") : `名盤100枚・${sh.name}：まだ0枚`);
+  }
+  return out.join("\n\n");
+}
+$("copyRec").addEventListener("click", async () => {
+  const txt = recordText();
+  try { await navigator.clipboard.writeText(txt); setStatus("記録をコピーしました。クロコとの会話に貼ってください。"); }
+  catch (e) {
+    const ta = $("recBox"); ta.hidden = false; ta.value = txt; ta.focus(); ta.select();
+    setStatus("下の枠の文字を長押しでコピーしてください。");
+  }
+});
+
+for (const sh of Object.values(SHELVES)) sh.heard = load(sh);
+render();
+</script>
+</body>
+</html>
