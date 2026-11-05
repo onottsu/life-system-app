@@ -103,6 +103,34 @@ details[open] .more::after { content: "（とじる）"; }
 .empty { color: var(--muted); font-size: .9rem; padding: 8px 4px; }
 footer { color: var(--muted); font-size: .8rem; display: grid; gap: 4px; }
 @media (prefers-reduced-motion: reduce) { .bar i, .box { transition: none; } }
+.rank { display: grid; gap: 6px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+.rank-top { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.rank-name { font-family: var(--f-display); font-weight: 700; font-size: 1.2rem; }
+.rank-name small { font-family: var(--f-body); font-size: .72rem; letter-spacing: .1em; color: var(--muted); font-weight: 700; margin-right: 8px; }
+.rank-next { font-size: .8rem; color: var(--muted); }
+.stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.stat { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; display: grid; gap: 0; }
+.stat b { font-family: var(--f-mono); font-weight: 500; font-size: 1.25rem; font-variant-numeric: tabular-nums; }
+.stat span { font-size: .72rem; color: var(--muted); }
+.gacha { font: inherit; font-weight: 700; font-size: .9rem; border: 0; border-radius: 999px; padding: 8px 16px; cursor: pointer; background: var(--accent); color: #fff; }
+.gacha:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.next small.gacha-tag { color: var(--accent); }
+.badges { display: grid; gap: 8px; }
+.badges h2 { font-family: var(--f-display); font-size: 1.1rem; margin: 0; }
+.badges .sub2 { font-size: .8rem; color: var(--muted); margin: 0; }
+.bgrid { display: flex; flex-wrap: wrap; gap: 6px; }
+.badge { font-size: .78rem; border-radius: 999px; padding: 4px 10px; border: 1px dashed var(--line); color: var(--muted); }
+.badge.got { border: 1px solid var(--done); background: var(--done-soft); color: var(--done); font-weight: 700; }
+.badge.new { animation: pop .6s ease; }
+@keyframes pop { 0% { transform: scale(.6); } 60% { transform: scale(1.15); } 100% { transform: scale(1); } }
+.film[aria-checked="true"] .box { animation: pop .35s ease; }
+#fx { position: fixed; inset: 0; pointer-events: none; z-index: 50; width: 100%; height: 100%; }
+#toast { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%) translateY(20px); opacity: 0; transition: opacity .25s, transform .25s; z-index: 60; background: var(--ink); color: var(--bg); border-radius: 14px; padding: 12px 18px; max-width: min(92vw, 420px); text-align: center; font-weight: 700; display: grid; gap: 2px; box-shadow: 0 8px 24px rgba(0,0,0,.25); }
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+#toast small { font-weight: 500; font-size: .8rem; opacity: .85; }
+#toast.big { background: var(--accent); color: #fff; font-size: 1.1rem; }
+@media (prefers-reduced-motion: reduce) { .badge.new, .film[aria-checked="true"] .box { animation: none; } #toast { transition: none; } }
+
 </style>
 
 <div class="wrap">
@@ -110,7 +138,10 @@ footer { color: var(--muted); font-size: .8rem; display: grid; gap: 4px; }
     <h1>名作映画100本</h1>
     <div class="count"><b id="done">0</b><span>／100本 見た</span><span id="left"></span></div>
     <div class="bar" aria-hidden="true"><i id="barfill"></i></div>
+    <div class="rank" id="rank"></div>
+    <div class="stats" id="stats"></div>
     <div class="next" id="next"></div>
+    <div class="tools"><button class="gacha" id="gacha" type="button">迷ったら：今日の1本を引く</button></div>
     <p class="status" id="status"></p>
     <div class="tools">
       <button class="chip" id="hideDone" type="button" aria-pressed="false">見た作品をかくす</button>
@@ -120,7 +151,10 @@ footer { color: var(--muted); font-size: .8rem; display: grid; gap: 4px; }
     <div hidden>
     </div>
   </header>
+  <section class="badges" id="badges"></section>
   <main id="groups" style="display:grid;gap:28px"></main>
+  <canvas id="fx" aria-hidden="true"></canvas>
+  <div id="toast" role="status" aria-live="polite"></div>
   <footer>
     <p>左の四角をタップすると「見た」になり、もう一度タップで戻ります。チェックはこのスマホのブラウザの中に保存されます（別のスマホやブラウザには引き継がれません）。ときどき「記録をコピー」でクロコに渡してください。題名をタップすると見る前のメモが開きます。</p>
     <p>見る前のメモと上映時間はクロコが書いた目安です（版によって長さが違います）。批評家の評価やよく言われる感想として知っていることから書いたもので、レビューサイトを直接読んだものではありません。結末には触れていません。</p>
@@ -155,12 +189,13 @@ function render() {
   $("barfill").style.width = n + "%";
   const leftMin = ORDER.filter(k => !watched[k]).reduce((a, k) => a + ((META[k] || {}).min || 0), 0);
   $("left").textContent = leftMin ? `残り約${Math.round(leftMin / 60)}時間` : "";
-  const nextN = ORDER.find(k => !watched[k]);
+  if (gachaPick && watched[gachaPick]) gachaPick = null;
+  const nextN = gachaPick || ORDER.find(k => !watched[k]);
   const nx = $("next");
   if (nextN) {
     const f = FILMS[nextN];
     nx.innerHTML = "";
-    const s = document.createElement("small"); s.textContent = "次に見る1本";
+    const s = document.createElement("small"); s.textContent = gachaPick ? "今日の1本（ガチャ）" : "次に見る1本"; if (gachaPick) s.className = "gacha-tag";
     const t = document.createElement("strong"); t.textContent = f.t;
     const mm = META[nextN] || {};
     const e = document.createElement("em"); e.textContent = `${f.y}年・${f.d}・${f.g}` + (mm.min ? `・約${mm.min}分` : "");
@@ -168,6 +203,7 @@ function render() {
   } else {
     nx.textContent = "100本ぜんぶ見ました。";
   }
+  renderGame();
   const root = $("groups");
   root.innerHTML = "";
   for (const g of GROUPS) {
@@ -236,6 +272,134 @@ function render() {
   }
 }
 
+
+// ---- ドパ仕様：称号・実績・連続週・ガチャ・紙吹雪 ----
+const RANKS = [[0, "見習い"], [5, "映画好き"], [10, "映画ファン"], [25, "常連"], [40, "映画通"], [60, "シネフィル"], [80, "名画座の主"], [100, "名作マスター"]];
+function rankOf(c) { let r = RANKS[0]; for (const x of RANKS) if (c >= x[0]) r = x; return r; }
+function nextRank(c) { return RANKS.find(x => x[0] > c) || null; }
+const MOOD = k => (META[k] || {}).mood;
+const MINS = k => (META[k] || {}).min || 0;
+const ACH = (() => {
+  const list = [];
+  const decades = {};
+  for (const k of ORDER) { const d = Math.floor(+FILMS[k].y / 10) * 10; const key = d < 1960 ? "1930〜50年代" : d >= 2000 ? "2000年代〜" : `${d}年代`; (decades[key] = decades[key] || []).push(k); }
+  for (const [name, ks] of Object.entries(decades)) list.push({ id: "dec-" + name, label: `${name}制覇`, ks });
+  const dirs = {};
+  for (const k of ORDER) for (const d of FILMS[k].d.split("／")) (dirs[d] = dirs[d] || []).push(k);
+  for (const [name, ks] of Object.entries(dirs)) if (ks.length >= 3) list.push({ id: "dir-" + name, label: `${name.split("・").pop()}コンプ`, ks });
+  for (const g of GROUPS) list.push({ id: "grp-" + g.key, label: `${g.name}制覇`, ks: g.films.map(f => f.n) });
+  list.push({ id: "long", label: "3時間超えを全部", ks: ORDER.filter(k => MINS(k) >= 180) });
+  list.push({ id: "heavy10", label: "重めを10本", need: 10, ks: ORDER.filter(k => MOOD(k) === "重め") });
+  list.push({ id: "light10", label: "軽めを10本", need: 10, ks: ORDER.filter(k => MOOD(k) === "軽め") });
+  return list;
+})();
+function achProgress(a, w) { const got = a.ks.filter(k => w[k]).length; const need = a.need || a.ks.length; return { got: Math.min(got, need), need, done: got >= need }; }
+function weekKey(d) { const t = new Date(d + "T00:00:00Z"); const day = (t.getUTCDay() + 6) % 7; t.setUTCDate(t.getUTCDate() - day); return t.toISOString().slice(0, 10); }
+function stats(w) {
+  const ks = Object.keys(w);
+  const minutes = ks.reduce((a, k) => a + MINS(k), 0);
+  const thisWeek = weekKey(today());
+  const weeks = new Set(ks.map(k => w[k] && weekKey(w[k])).filter(Boolean));
+  let streak = 0; let cur = new Date(thisWeek + "T00:00:00Z");
+  if (!weeks.has(thisWeek)) cur.setUTCDate(cur.getUTCDate() - 7);
+  while (weeks.has(cur.toISOString().slice(0, 10))) { streak++; cur.setUTCDate(cur.getUTCDate() - 7); }
+  const week = ks.filter(k => w[k] && weekKey(w[k]) === thisWeek).length;
+  return { count: ks.length, minutes, week, streak };
+}
+function snapshot() { const w = { ...watched }; return { count: Object.keys(w).length, rank: rankOf(Object.keys(w).length)[1], ach: new Set(ACH.filter(a => achProgress(a, w).done).map(a => a.id)) }; }
+let newBadges = new Set();
+let gachaPick = null;
+
+function renderGame() {
+  const st = stats(watched);
+  const r = rankOf(st.count), nr = nextRank(st.count);
+  const rk = $("rank"); rk.innerHTML = "";
+  const top = document.createElement("div"); top.className = "rank-top";
+  const nm = document.createElement("div"); nm.className = "rank-name";
+  const lab = document.createElement("small"); lab.textContent = "称号"; nm.append(lab, document.createTextNode(r[1]));
+  const nx = document.createElement("div"); nx.className = "rank-next";
+  nx.textContent = nr ? `次の「${nr[1]}」まであと${nr[0] - st.count}本` : "100本達成";
+  top.append(nm, nx); rk.append(top);
+  const sx = $("stats"); sx.innerHTML = "";
+  for (const [v, l] of [[`${Math.floor(st.minutes / 60)}時間`, "見た時間の合計"], [`${st.week}本`, "今週見た"], [`${st.streak}週`, "連続で見ている週"]]) {
+    const d = document.createElement("div"); d.className = "stat";
+    const b = document.createElement("b"); b.textContent = v; const sp = document.createElement("span"); sp.textContent = l;
+    d.append(b, sp); sx.append(d);
+  }
+  const bd = $("badges"); bd.innerHTML = "";
+  const h = document.createElement("h2"); const gotN = ACH.filter(a => achProgress(a, watched).done).length; h.textContent = `実績 ${gotN}／${ACH.length}`;
+  const p = document.createElement("p"); p.className = "sub2"; p.textContent = "年代・監督・サービスごとに全部見るともらえる";
+  const grid = document.createElement("div"); grid.className = "bgrid";
+  const sorted = [...ACH].sort((a, b) => { const pa = achProgress(a, watched), pb = achProgress(b, watched); return (pb.done - pa.done) || (pb.got / pb.need - pa.got / pa.need); });
+  for (const a of sorted) {
+    const pr = achProgress(a, watched);
+    const c = document.createElement("span"); c.className = "badge" + (pr.done ? " got" : "") + (newBadges.has(a.id) ? " new" : "");
+    c.textContent = pr.done ? `★ ${a.label}` : `${a.label} ${pr.got}/${pr.need}`;
+    grid.append(c);
+  }
+  bd.append(h, p, grid);
+  newBadges = new Set();
+}
+
+const PRAISE = ["ナイス！", "また1本。", "いい夜だった？", "名作を1本ストック。", "積み上がってる。", "その調子。"];
+let toastTimer = null;
+function toast(main, sub, big) {
+  const t = $("toast"); t.innerHTML = "";
+  const m = document.createElement("span"); m.textContent = main; t.append(m);
+  if (sub) { const s2 = document.createElement("small"); s2.textContent = sub; t.append(s2); }
+  t.className = big ? "show big" : "show";
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.className = big ? "big" : ""; }, big ? 3800 : 2200);
+}
+function burst(x, y, big) {
+  try { if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return; } catch (e) {}
+  const cv = $("fx"); const ctx = cv.getContext("2d"); const dpr = window.devicePixelRatio || 1;
+  cv.width = innerWidth * dpr; cv.height = innerHeight * dpr; ctx.scale(dpr, dpr);
+  const cols = [getComputedStyle(document.documentElement).getPropertyValue("--accent").trim() || "#a3242c", "#f2b134", "#2f7a54", "#3b6fd8", "#e86fa0"];
+  const N = big ? 140 : 28; const parts = [];
+  for (let i = 0; i < N; i++) {
+    const a = big ? Math.random() * Math.PI * 2 : -Math.PI / 2 + (Math.random() - .5) * 2.2;
+    const sp = (big ? 6 : 4) + Math.random() * (big ? 8 : 4);
+    parts.push({ x: big ? innerWidth / 2 : x, y: big ? innerHeight / 3 : y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, r: 3 + Math.random() * 4, c: cols[i % cols.length], rot: Math.random() * 6, life: 0 });
+  }
+  const T = big ? 110 : 55;
+  (function step() {
+    ctx.clearRect(0, 0, innerWidth, innerHeight);
+    let alive = false;
+    for (const p of parts) {
+      p.life++; if (p.life > T) continue; alive = true;
+      p.vy += .25; p.vx *= .99; p.x += p.vx; p.y += p.vy; p.rot += .2;
+      ctx.globalAlpha = 1 - p.life / T; ctx.fillStyle = p.c;
+      ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.fillRect(-p.r, -p.r / 2, p.r * 2, p.r); ctx.restore();
+    }
+    if (alive) requestAnimationFrame(step); else ctx.clearRect(0, 0, innerWidth, innerHeight);
+  })();
+}
+function celebrate(n, before) {
+  const after = snapshot();
+  const gained = [...after.ach].filter(id => !before.ach.has(id));
+  newBadges = new Set(gained);
+  const el = document.getElementById("film-" + n);
+  const rc = el ? el.getBoundingClientRect() : { left: innerWidth / 2, top: innerHeight / 2, width: 0, height: 0 };
+  try { navigator.vibrate && navigator.vibrate(gained.length || after.rank !== before.rank ? [30, 40, 60] : 25); } catch (e) {}
+  if (after.count === 100) { burst(0, 0, true); toast("100本 見切った！", "名作マスター", true); }
+  else if (after.rank !== before.rank) { burst(0, 0, true); toast(`称号アップ：${after.rank}`, `${after.count}本目は『${FILMS[n].t}』`, true); }
+  else if (gained.length) { burst(0, 0, true); toast(`実績：${ACH.find(a => a.id === gained[0]).label}`, gained.length > 1 ? `ほか${gained.length - 1}つ` : `${after.count}本目`, true); }
+  else if (after.count % 10 === 0) { burst(0, 0, true); toast(`${after.count}本！`, "", true); }
+  else { burst(rc.left + rc.width / 2, rc.top + rc.height / 2, false); toast(`${after.count}本目　${PRAISE[after.count % PRAISE.length]}`, `あと${100 - after.count}本`); }
+  renderGame();
+}
+$("gacha").addEventListener("click", () => {
+  const g = GROUPS.find(g => g.films.some(f => !watched[f.n]));
+  if (!g) return;
+  const pool = g.films.filter(f => !watched[f.n]);
+  gachaPick = pool[Math.floor(Math.random() * pool.length)].n;
+  render();
+  const f = FILMS[gachaPick];
+  toast(`今日の1本：${f.t}`, `${f.g}で見られる`);
+  const det = document.getElementById("memo-" + gachaPick);
+  if (det) { det.open = true; openMemo.add(gachaPick); det.closest("li").scrollIntoView({ behavior: "smooth", block: "center" }); }
+});
+
 function setStatus(msg, kind) { const s = $("status"); s.textContent = msg; s.dataset.kind = kind || ""; s.hidden = !msg; }
 
 $("hideDone").setAttribute("aria-pressed", hideDone ? "true" : "false");
@@ -256,8 +420,9 @@ function save() {
   catch (e) { setStatus("このブラウザでは記録を保存できません（プライベートモードなど）。", "warn"); return false; }
 }
 function toggle(n) {
-  if (watched[n]) delete watched[n]; else watched[n] = today();
-  save(); render();
+  if (watched[n]) { delete watched[n]; save(); render(); return; }
+  const before = snapshot();
+  watched[n] = today(); save(); render(); celebrate(n, before);
 }
 function recordText() {
   const ks = ORDER.filter(k => watched[k]).sort((a, b) => (watched[a] < watched[b] ? -1 : watched[a] > watched[b] ? 1 : 0));
