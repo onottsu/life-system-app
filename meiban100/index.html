@@ -244,6 +244,15 @@ h2.sec small { font-family: var(--f-mono); font-size: .8rem; color: var(--muted)
 .star.pulse { animation: bump .45s var(--spring); }
 .star:active { transform: scale(1.35); }
 .seenline { font-size: .82rem; color: var(--done); }
+.mynote { margin-top: 6px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px; display: grid; gap: 8px; }
+.mynote .nt { font-size: .7rem; letter-spacing: .16em; color: var(--gold); font-weight: 700; }
+.mynote textarea { width: 100%; box-sizing: border-box; min-height: 104px; resize: vertical; background: var(--bg2); color: var(--ink); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; font: inherit; font-size: 16px; line-height: 1.7; }
+.mynote textarea::placeholder { color: var(--faint); }
+.mynote textarea:focus { outline: 2px solid var(--gold); outline-offset: 0; border-color: transparent; }
+.mynote .row2 { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.mynote .row2 small { color: var(--muted); font-family: var(--f-mono); font-size: .75rem; }
+.mynote .row2 .btn { padding: 8px 16px; }
+.mynote .saved { color: var(--done); font-size: .78rem; }
 
 /* overlays */
 #fx { position: fixed; inset: 0; pointer-events: none; z-index: 70; width: 100%; height: 100%; }
@@ -302,6 +311,7 @@ h2.sec small { font-family: var(--f-mono); font-size: .8rem; color: var(--muted)
 .poster, .slot, .mcard { box-sizing: border-box; }
 .open { grid-template-columns: 58px 1fr; }
 .open .poster { width: 58px; font-size: 14px; }
+.open .poster.seen::before { display: none; }
 .shelf { display: grid; grid-template-columns: 1fr 1fr; background: var(--bg2); border: 1px solid var(--line); border-radius: 999px; padding: 3px; position: relative; }
 .shelf button { border: 0; background: none; border-radius: 999px; padding: 6px 12px; font-size: .85rem; font-weight: 700; color: var(--faint); cursor: pointer; position: relative; z-index: 1; transition: color .2s; display: flex; gap: 6px; align-items: baseline; justify-content: center; }
 .shelf button small { font-family: var(--f-mono); font-weight: 500; font-size: .7rem; opacity: .8; }
@@ -322,6 +332,8 @@ h2.sec small { font-family: var(--f-mono); font-size: .8rem; color: var(--muted)
 .ticket.gold { background: linear-gradient(160deg, #ffe7a3, #e5b54c); color: #2a1d05; }
 .ticket .td { color: #4b566c; border-top-color: rgba(27, 33, 49, .25); }
 .ticket .ta { font-size: .72rem; color: #4b566c; line-height: 1.3; }
+.ticket .tc { font-size: .74rem; color: #2f3a52; line-height: 1.55; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.ticket.gold .tc { color: #4a3b25; }
 .ticket.gold .ta { color: #5a4310; }
 
 </style>
@@ -424,8 +436,10 @@ for (const S of Object.values(SHELVES)) {
   list.push({ id: "hard10", label: "手ごわいを10枚", desc: "とっつきにくい名盤を10枚", need: 10, ks: S.order.filter(k => S.by[k].mood === "手ごわい") });
   list.push({ id: "easy10", label: "聴きやすいを10枚", desc: "気楽に聴ける名盤を10枚", need: 10, ks: S.order.filter(k => S.by[k].mood === "聴きやすい") });
   list.push({ id: "rate10", label: "評論家", desc: "10枚に星をつける", need: 10, rated: true, ks: S.order });
+  list.push({ id: "note5", label: "語り部", desc: "5枚に感想を書く", need: 5, noted: true, ks: S.order });
   S.ach = list;
   S.W = {};
+  S.seen = (() => { try { return +(localStorage.getItem(`meiban100-seen-${S.key}`) || 0); } catch (e) { return 0; } })();
 }
 
 const ls = {
@@ -463,7 +477,7 @@ function weekKey(d) { const t = new Date(d + "T00:00:00Z"); t.setUTCDate(t.getUT
 const rankOf = c => RANKS.reduce((r, x) => (c >= x[0] ? x : r), RANKS[0]);
 const nextRank = c => RANKS.find(x => x[0] > c) || null;
 const A = k => S.by[k];
-function achProg(a, w) { const got = a.ks.filter(k => w[k] && (!a.rated || w[k].r > 0)).length; const need = a.need || a.ks.length; return { got: Math.min(got, need), need, done: got >= need }; }
+function achProg(a, w) { const got = a.ks.filter(k => w[k] && (!a.rated || w[k].r > 0) && (!a.noted || (w[k].c || "").trim())).length; const need = a.need || a.ks.length; return { got: Math.min(got, need), need, done: got >= need }; }
 function stats() {
   const ks = Object.keys(W);
   const minutes = ks.reduce((a, k) => a + (A(k) ? A(k).min : 0), 0);
@@ -505,7 +519,7 @@ function loadLocal(s) { try { const v = JSON.parse(ls.get(lsKey(s)) || "null"); 
 function persist(n) {
   if (mode === "local") { if (!ls.set(lsKey(S), JSON.stringify(W))) setStatus("このブラウザでは記録を保存できません（プライベートモードなど）。"); return; }
   if (mode !== "db" || !S.col) return;
-  const id = "a" + n; const col = S.col; const body = W[n] ? { n: +n, title: A(n).t, artist: A(n).a, date: W[n].d, rating: W[n].r || 0 } : null;
+  const id = "a" + n; const col = S.col; const body = W[n] ? { n: +n, title: A(n).t, artist: A(n).a, date: W[n].d, rating: W[n].r || 0, comment: W[n].c || "" } : null;
   const key = S.key + id;
   writing[key] = (writing[key] || Promise.resolve()).then(() => (body ? col.doc(id).set(body) : col.doc(id).delete())).catch(() => setStatus("保存できませんでした。もう一度タップしてください。"));
 }
@@ -622,7 +636,7 @@ function setHeard(n, on, originEl) {
   if (on === !!W[n]) return;
   if (!on) { delete W[n]; persist(n); renderAll(); if (sheetN === n) renderSheet(n, true); toast("取り消しました", A(n).t); return; }
   const before = snapshot();
-  W[n] = { d: today(), r: 0 }; persist(n); fresh = n;
+  W[n] = { d: today(), r: 0, c: "" }; persist(n); fresh = n;
   if (S.gachaPick === n) S.gachaPick = null;
   const rc = originEl ? originEl.getBoundingClientRect() : null;
   renderAll(); if (sheetN === n) renderSheet(n, true);
@@ -674,18 +688,21 @@ function route() {
   for (const [k] of TABS) $("v-" + k).hidden = k !== cur;
   for (const b of $("tabs").children) b.setAttribute("aria-current", b.dataset.k === cur ? "page" : "false");
 }
-function go(k) { if (k === "list") { listAnim = true; renderList(); } if (current() === k) { window.scrollTo({ top: 0, behavior: "smooth" }); return; } location.hash = k; route(); window.scrollTo({ top: 0 }); }
+function markShelfSeen() { const c = Object.keys(W).length; if (S.seen !== c) { S.seen = c; ls.set(`meiban100-seen-${S.key}`, String(c)); renderTabs(); } }
+function go(k) { if (k === "tickets") setTimeout(markShelfSeen, 0); if (k === "list") { listAnim = true; renderList(); } if (current() === k) { window.scrollTo({ top: 0, behavior: "smooth" }); return; } location.hash = k; route(); window.scrollTo({ top: 0 }); }
 let lastDot = 0;
 function renderTabs() {
   const n = $("tabs"); n.innerHTML = "";
   const c = Object.keys(W).length;
   for (const [k, label, ic] of TABS) {
     const b = h("button", "tab"); b.type = "button"; b.dataset.k = k; b.innerHTML = ICON[ic]; b.append(h("span", "", label));
-    if (k === "tickets" && c) { const d = h("span", "dot" + (c > lastDot ? " bump" : ""), c); b.append(d); }
+    if (S.loaded && S.seen > c) { S.seen = c; ls.set(`meiban100-seen-${S.key}`, String(c)); }
+    const unseen = c - S.seen;
+    if (k === "tickets" && unseen > 0) { const d = h("span", "dot" + (unseen > lastDot ? " bump" : ""), unseen); b.append(d); }
     b.addEventListener("click", () => go(k));
     n.append(b);
   }
-  lastDot = c;
+  lastDot = c - S.seen;
   route();
 }
 function renderHome() {
@@ -757,7 +774,7 @@ function renderList() {
       sub.append(h("span", "mono", x.y), h("span", "mono", `${x.min}分`));
       sub.append(h("span", "tag" + (x.mood === "手ごわい" ? " heavy" : x.mood === "聴きやすい" ? " light" : ""), x.mood));
       if (x.s) sub.append(h("span", "tag heavy", "配信なし"));
-      if (done) { sub.append(h("span", "", `${md(W[x.n].d)}に聴いた`)); if (W[x.n].r) sub.append(h("span", "stars-mini", "★".repeat(W[x.n].r))); }
+      if (done) { sub.append(h("span", "", `${md(W[x.n].d)}に聴いた`)); if (W[x.n].r) sub.append(h("span", "stars-mini", "★".repeat(W[x.n].r))); if (W[x.n].c) sub.append(h("span", "tag", "感想")); }
       tx.append(sub);
       op.append(poster(x, done), tx);
       op.addEventListener("click", () => openSheet(x.n));
@@ -777,7 +794,9 @@ function ticket(k, no) {
   t.setAttribute("aria-label", `${x.t}のレコード`);
   const top = h("div", "no"); top.append(h("span", "", `No.${String(no || 0).padStart(3, "0")}`), h("span", "", `#${k}`));
   const td = h("div", "td"); td.append(h("span", "", w.d ? w.d.replace(/-/g, ".") : ""), h("span", "st", w.r ? "★".repeat(w.r) : ""));
-  t.append(top, h("div", "tt", x.t), h("div", "ta", x.a), td);
+  t.append(top, h("div", "tt", x.t), h("div", "ta", x.a));
+  if (w.c) t.append(h("div", "tc", w.c));
+  t.append(td);
   t.addEventListener("click", () => openSheet(k));
   return t;
 }
@@ -814,6 +833,7 @@ let sheetN = null; let lastFocus = null;
 function renderSheet(n, keepScroll) {
   const x = A(n); const w = W[n];
   const body = $("sheet").querySelector(".body"); const st = body.scrollTop;
+  const prevBox = $("myNote"); const draft = prevBox && prevBox.dataset.k === S.key + n && prevBox.value !== (w && w.c || "") ? prevBox.value : null;
   const b = $("shBody"); b.innerHTML = "";
   const head = h("div", "sh-head"); const tx = h("div");
   const t = h("h3", "", x.t); t.id = "shTitle"; tx.append(t);
@@ -825,6 +845,7 @@ function renderSheet(n, keepScroll) {
   chips.append(h("span", "chip svc", `まず「${x.first}」`));
   if (x.s) chips.append(h("span", "chip warn", "配信なし・要確認"));
   b.append(chips);
+  if (w) b.append(noteBox(n, draft));
   const notes = h("div", "notes");
   const sec = (title, node) => { const d = h("div"); d.append(h("div", "nt", title), node); notes.append(d); };
   sec("ひとことで", h("p", "", x.pre));
@@ -845,6 +866,33 @@ function renderSheet(n, keepScroll) {
   } else {
     const gob = h("button", "btn primary wide", "聴いた！"); gob.type = "button"; gob.addEventListener("click", () => setHeard(n, true, gob)); ft.append(gob);
   }
+}
+function noteBox(n, draft) {
+  const w = W[n]; const box = h("div", "mynote");
+  box.append(h("div", "nt", "わたしの感想"));
+  const ta = h("textarea"); ta.id = "myNote"; ta.dataset.k = S.key + n; ta.maxLength = 2000; ta.rows = 4;
+  ta.placeholder = "聴いてどうだった？ 好きな曲、刺さった一節、引っかかったところ。ひとことでいい";
+  ta.setAttribute("aria-label", "わたしの感想");
+  ta.value = draft != null ? draft : (w.c || "");
+  const row = h("div", "row2"); const info = h("small", "", ""); const save = h("button", "btn primary", "保存"); save.type = "button";
+  const upd = () => { const dirty = ta.value.trim() !== (W[n] && W[n].c || "").trim(); save.disabled = !dirty; save.style.opacity = dirty ? "1" : ".45"; info.className = dirty ? "" : "saved"; info.textContent = dirty ? `${ta.value.length}字` : (W[n] && W[n].c ? "保存ずみ" : ""); };
+  ta.addEventListener("input", upd);
+  save.addEventListener("click", () => saveNote(n, ta.value));
+  ta.addEventListener("blur", () => { if (!save.disabled) saveNote(n, ta.value); });
+  row.append(info, save); box.append(ta, row); upd();
+  return box;
+}
+function saveNote(n, text) {
+  if (!W[n]) return;
+  const v = text.trim().slice(0, 2000);
+  if (v === (W[n].c || "")) return;
+  const before = snapshot(); const first = !W[n].c && v;
+  W[n] = { ...W[n], c: v }; persist(n); chime("rate"); buzz(12);
+  renderHome(); renderList(); renderTickets(); renderAwards();
+  const ta = $("myNote"); if (ta) ta.dispatchEvent(new Event("input"));
+  toast(v ? (first ? "感想をレコードに書き込んだ" : "感想を更新した") : "感想を消した", A(n).t);
+  const after = snapshot(); const gained = [...after.ach].filter(id => !before.ach.has(id));
+  if (gained.length) setTimeout(() => { burst(0, 0, true); chime("big"); const a = S.ach.find(x => x.id === gained[0]); modal("実績解除", a.label, a.desc); }, 300);
 }
 function openSheet(n) {
   sheetN = n; lastFocus = document.activeElement; renderSheet(n);
@@ -907,7 +955,7 @@ function recordText() {
   return Object.values(SHELVES).map(s => {
     const ks = s.order.filter(k => s.W[k]).sort((a, b) => (s.W[a].d || "").localeCompare(s.W[b].d || "") || a - b);
     if (!ks.length) return `名盤100枚・${s.name}：まだ0枚`;
-    return `名盤100枚・${s.name}の記録（${ks.length}枚）\n` + ks.map(k => `${s.W[k].d} #${k} ${s.by[k].t}／${s.by[k].a}${s.W[k].r ? " ★" + s.W[k].r : ""}`).join("\n");
+    return `名盤100枚・${s.name}の記録（${ks.length}枚）\n` + ks.map(k => `${s.W[k].d} #${k} ${s.by[k].t}／${s.by[k].a}${s.W[k].r ? " ★" + s.W[k].r : ""}${s.W[k].c ? "\n  感想：" + s.W[k].c.replace(/\n/g, " ") : ""}`).join("\n");
   }).join("\n\n");
 }
 $("copyBtn").addEventListener("click", async () => {
@@ -917,23 +965,23 @@ $("copyBtn").addEventListener("click", async () => {
 });
 
 /* boot */
-window.addEventListener("hashchange", route);
+window.addEventListener("hashchange", () => { route(); if (current() === "tickets") markShelfSeen(); });
 renderSound();
 renderAll();
 (async () => {
   try { db = window.claude && window.claude.use ? await window.claude.use("db") : null; } catch (e) { db = null; }
-  if (!db) { mode = "local"; for (const s of Object.values(SHELVES)) s.W = loadLocal(s); W = S.W; renderAll(); if (window.claude) setStatus("記録はこのブラウザの中に保存しています。"); return; }
-  mode = "db";
+  if (!db) { mode = "local"; for (const s of Object.values(SHELVES)) { s.W = loadLocal(s); s.loaded = true; if (ls.get(`meiban100-seen-${s.key}`) == null) s.seen = Object.keys(s.W).length; } W = S.W; renderAll(); if (current() === "tickets") markShelfSeen(); if (window.claude) setStatus("記録はこのブラウザの中に保存しています。"); return; }
   setStatus("記録を読み込んでいます…");
   const timer = setTimeout(() => setStatus("記録にまだつながっていません。電波のよい所で開き直してください。"), 10000);
   for (const s of Object.values(SHELVES)) {
     s.col = db.collection(s.key);
     s.col.onSnapshot(snap => {
       const next = {};
-      for (const d of snap.docs) { const v = d.data(); if (v && v.n) next[v.n] = { d: v.date || "", r: v.rating || 0 }; }
-      s.W = next; if (s === S) W = s.W;
+      for (const d of snap.docs) { const v = d.data(); if (v && v.n) next[v.n] = { d: v.date || "", r: v.rating || 0, c: v.comment || "" }; }
+      if (ls.get(`meiban100-seen-${s.key}`) == null) { s.seen = Object.keys(next).length; ls.set(`meiban100-seen-${s.key}`, String(s.seen)); }
+      s.W = next; s.loaded = true; if (s === S) W = s.W; mode = "db";
       if (!snap.metadata || !snap.metadata.fromCache) { clearTimeout(timer); setStatus(""); }
-      renderAll(); if (sheetN != null) renderSheet(sheetN, true);
+      renderAll(); if (sheetN != null && document.activeElement !== $("myNote")) renderSheet(sheetN, true);
     }, () => { clearTimeout(timer); setStatus("記録を読めませんでした。"); });
   }
 })();
