@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow">
-<meta name="theme-color" content="#1f3b66">
+<meta name="theme-color" content="#0f1219">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="名盤100">
@@ -12,450 +12,932 @@
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
 <link rel="manifest" href="manifest.webmanifest">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font-size:14px}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
 <title>名盤100枚</title>
+<meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Old+Mincho:wght@600;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Old+Mincho:wght@600;700;900&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
 <style>
-/* Layout: 名作映画100本と同じ1列の作り。上に洋楽／邦楽のタブ、その下に進み具合と年代ごとの棚。 */
+/* Layout: 名作映画100と同じ単一テーマのアプリ。夜のリスニングルーム、操作は藍、ごほうびは金。上に洋楽／邦楽の切り替え、下にホーム／リスト／レコード棚／実績のタブ。メモは下から出るシート。 */
 :root {
-  padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px);
-  --bg: #f5f6f8;
-  --surface: #ffffff;
-  --ink: #1b2233;
-  --muted: #667086;
-  --line: #e0e4eb;
-  --accent: #27467a;
-  --accent-soft: #e2e9f4;
-  --gold: #b88a2c;
-  --done: #2f7a54;
-  --done-soft: #e2f1e8;
+  color-scheme: dark;
+  --bg: #0f1219;
+  --bg2: #141824;
+  --surface: #1b2131;
+  --surface2: #242b3e;
+  --line: #2f384e;
+  --ink: #f4efe6;
+  --muted: #a2abc0;
+  --faint: #687189;
+  --accent: #4f86e8;
+  --accent-ink: #f3f7ff;
+  --gold: #e9b94f;
+  --gold-soft: rgba(233, 185, 79, .14);
+  --done: #62c895;
+  --shadow: 0 10px 30px rgba(0, 0, 0, .45);
+  --ease: cubic-bezier(.2, .9, .2, 1);
+  --spring: cubic-bezier(.2, 1.6, .4, 1);
   --f-display: "Zen Old Mincho", "Hiragino Mincho ProN", "Yu Mincho", serif;
   --f-body: "Zen Kaku Gothic New", "Hiragino Sans", "Yu Gothic", system-ui, sans-serif;
   --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
 }
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #11151d; --surface: #1a2030; --ink: #e8ebf2; --muted: #9aa2b4; --line: #2a3243;
-    --accent: #8fb0e6; --accent-soft: #212d45; --gold: #e0b55a; --done: #6cc496; --done-soft: #1b3226; color-scheme: dark;
-  }
-}
-* { box-sizing: border-box; }
-body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.6; }
-[hidden] { display: none !important; }
-.wrap { max-width: 640px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 20px 48px; display: grid; gap: 28px; }
-header { display: grid; gap: 14px; }
-h1 { font-family: var(--f-display); font-weight: 700; font-size: 1.9rem; line-height: 1.2; margin: 0; text-wrap: balance; letter-spacing: .02em; }
-.tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 0; background: var(--line); border-radius: 12px; padding: 4px; position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; }
-.tab { all: unset; box-sizing: border-box; text-align: center; padding: 9px 8px; border-radius: 9px; cursor: pointer; font-weight: 700; color: var(--muted); display: grid; gap: 0; }
-.tab small { font-family: var(--f-mono); font-weight: 500; font-size: .75rem; font-variant-numeric: tabular-nums; }
-.tab[aria-selected="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,.12); }
-.tab:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.count { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
-.count b { font-family: var(--f-mono); font-weight: 500; font-size: 2.4rem; line-height: 1; font-variant-numeric: tabular-nums; }
-.count span { color: var(--muted); font-size: .9rem; }
-.bar { height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; }
-.bar i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .3s ease; }
-.next { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; display: grid; gap: 2px; }
-.next small { font-size: .72rem; letter-spacing: .12em; color: var(--accent); font-weight: 700; }
-.next strong { font-family: var(--f-display); font-size: 1.25rem; font-weight: 700; }
-.next em { font-style: normal; color: var(--muted); font-size: .85rem; }
-.next .warn { color: var(--gold); font-size: .8rem; font-weight: 500; }
-.status { font-size: .82rem; color: var(--muted); margin: 0; }
-.status[data-kind="warn"] { color: var(--gold); }
-.tools { display: flex; gap: 8px; flex-wrap: wrap; }
-.chip { font: inherit; font-size: .85rem; border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 999px; padding: 6px 14px; cursor: pointer; }
-.chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
-.chip:focus-visible, .rec:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-section { display: grid; gap: 10px; }
-.sec-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; border-bottom: 2px solid var(--ink); padding-bottom: 6px; }
-.sec-head h2 { font-family: var(--f-display); font-size: 1.3rem; margin: 0; font-weight: 700; }
-.sec-head h2 span { font-family: var(--f-body); font-size: .8rem; font-weight: 500; color: var(--muted); margin-left: 8px; }
-.sec-head .n { font-family: var(--f-mono); font-size: .9rem; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
-ul { list-style: none; margin: 0; padding: 0; display: grid; }
-li + li { border-top: 1px dashed var(--line); }
-.row { display: grid; grid-template-columns: 26px 1fr; gap: 12px; align-items: start; padding: 12px 4px; }
-.rec { all: unset; box-sizing: border-box; display: grid; place-items: center; width: 26px; height: 26px; cursor: pointer; border-radius: 50%; margin-top: 1px; }
-.disc { width: 22px; height: 22px; border: 2px solid var(--muted); border-radius: 50%; display: grid; place-items: center; transition: background .15s, border-color .15s; }
-.disc svg { width: 14px; height: 14px; opacity: 0; }
-.rec[aria-checked="true"] .disc { background: var(--done); border-color: var(--done); }
-.rec[aria-checked="true"] .disc svg { opacity: 1; }
-.t { font-weight: 700; font-size: 1rem; }
-.a { font-size: .88rem; font-weight: 500; }
-.row.is-done .t { color: var(--muted); text-decoration: line-through; text-decoration-color: var(--muted); }
-.sub { font-size: .8rem; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 10px; }
-.sub .y { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
-.sub .w { color: var(--done); font-weight: 500; }
-.sub .nos { color: var(--gold); font-weight: 500; }
-.first { font-size: .8rem; color: var(--muted); }
-.first b { color: var(--ink); font-weight: 500; }
-.row.is-next .t::after { content: "次はこれ"; font-size: .68rem; font-weight: 700; color: var(--accent); background: var(--accent-soft); border-radius: 4px; padding: 1px 6px; margin-left: 8px; vertical-align: 2px; }
-details { min-width: 0; }
-summary { list-style: none; cursor: pointer; display: grid; gap: 1px; border-radius: 6px; }
-summary::-webkit-details-marker { display: none; }
-summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.more { font-size: .75rem; color: var(--accent); font-weight: 500; }
-details[open] .more::after { content: "（とじる）"; }
-.tag { font-size: .72rem; border: 1px solid var(--line); border-radius: 4px; padding: 0 6px; line-height: 1.6; }
-.tag.hard { border-color: var(--gold); color: var(--gold); }
-.notes { display: grid; gap: 12px; margin: 8px 0 0; padding: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; font-size: .88rem; }
-.notes dt { font-size: .7rem; font-weight: 700; letter-spacing: .1em; color: var(--muted); }
-.notes dd { margin: 0; line-height: 1.75; }
-.pts { display: grid; gap: 4px; padding-left: 1.1em; margin: 0; list-style: disc; }
-.pts li + li { border-top: 0; }
-.empty { color: var(--muted); font-size: .9rem; padding: 8px 4px; }
-footer { color: var(--muted); font-size: .8rem; display: grid; gap: 6px; }
-footer p { margin: 0; }
-.rank { display: grid; gap: 6px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
-.rank-top { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
-.rank-name { font-family: var(--f-display); font-weight: 700; font-size: 1.2rem; }
-.rank-name small { font-family: var(--f-body); font-size: .72rem; letter-spacing: .1em; color: var(--muted); font-weight: 700; margin-right: 8px; }
-.rank-next { font-size: .8rem; color: var(--muted); }
-.stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
-.stat { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; display: grid; }
-.stat b { font-family: var(--f-mono); font-weight: 500; font-size: 1.25rem; font-variant-numeric: tabular-nums; }
+html, body { background: var(--bg); }
+body { color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.6; -webkit-tap-highlight-color: transparent; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 30; background: var(--bg); }
+button { font: inherit; color: inherit; }
+.app { max-width: 560px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 12px calc(96px + env(safe-area-inset-bottom, 0px)); }
+.view { display: grid; gap: 18px; }
+.view[hidden] { display: none !important; }
+.view:not([hidden]) > * { animation: rise .45s var(--ease) both; }
+.view:not([hidden]) > :nth-child(2) { animation-delay: .04s; }
+.view:not([hidden]) > :nth-child(3) { animation-delay: .08s; }
+.view:not([hidden]) > :nth-child(4) { animation-delay: .12s; }
+.view:not([hidden]) > :nth-child(5) { animation-delay: .16s; }
+.view:not([hidden]) > :nth-child(n+6) { animation-delay: .2s; }
+.topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-block: 6px 2px; }
+.brand { font-family: var(--f-display); font-weight: 900; font-size: 1.15rem; letter-spacing: .04em; }
+.brand span { color: var(--gold); }
+.iconbtn { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; width: 38px; height: 38px; display: grid; place-items: center; cursor: pointer; transition: transform .2s var(--spring); }
+.iconbtn:active { transform: scale(.88); }
+.iconbtn svg { width: 18px; height: 18px; }
+.iconbtn:focus-visible, .tab:focus-visible, .btn:focus-visible, .chk:focus-visible, .open:focus-visible, .seg button:focus-visible, .star:focus-visible, .ticket:focus-visible, .switch:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+h2.sec { font-family: var(--f-display); font-size: 1.15rem; margin: 6px 0 0; display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+h2.sec small { font-family: var(--f-mono); font-size: .8rem; color: var(--muted); font-weight: 500; }
+
+/* hero */
+.hero { position: relative; border-radius: 22px; padding: 20px; background: radial-gradient(120% 90% at 50% 0%, #1c2c52 0%, var(--surface) 55%, var(--bg2) 100%); border: 1px solid var(--line); display: grid; grid-template-columns: 132px 1fr; gap: 18px; align-items: center; overflow: hidden; }
+.hero::after { content: ""; position: absolute; inset: -40% -60%; background: conic-gradient(from 0deg, transparent 0 80%, rgba(233, 185, 79, .10) 88%, transparent 96%); animation: sweep 9s linear infinite; pointer-events: none; }
+.ring { position: relative; width: 132px; height: 132px; z-index: 1; }
+.ring svg { width: 100%; height: 100%; transform: rotate(-90deg); overflow: visible; }
+.ring .track { stroke: rgba(255, 255, 255, .08); }
+.ring .fill { transition: stroke-dashoffset 1.1s var(--ease); filter: drop-shadow(0 0 6px rgba(233, 185, 79, .45)); }
+.ring .num { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; }
+.ring .num b { font-family: var(--f-mono); font-size: 2.4rem; font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums; display: inline-block; }
+.ring .num b.bump { animation: bump .5s var(--spring); }
+.ring .num span { display: block; font-size: .72rem; color: var(--muted); margin-top: 4px; }
+.rankbox { display: grid; gap: 6px; min-width: 0; z-index: 1; }
+.rankbox small { font-size: .68rem; letter-spacing: .18em; color: var(--gold); font-weight: 700; }
+.rankbox .rname { font-family: var(--f-display); font-weight: 900; font-size: 1.55rem; line-height: 1.2; text-wrap: balance; }
+.rbar { height: 6px; border-radius: 3px; background: rgba(255, 255, 255, .08); overflow: hidden; }
+.rbar i { display: block; height: 100%; width: 0; border-radius: 3px; background: linear-gradient(90deg, var(--gold), #ffd98a, var(--gold)); background-size: 200% 100%; animation: flow 2.4s linear infinite; transition: width .9s var(--ease); }
+.rankbox .rnext { font-size: .8rem; color: var(--muted); }
+.stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.stat { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px; display: grid; gap: 2px; min-width: 0; }
+.stat b { font-family: var(--f-mono); font-weight: 600; font-size: 1.35rem; font-variant-numeric: tabular-nums; display: flex; align-items: center; gap: 4px; }
+.stat b svg { width: 18px; height: 18px; }
 .stat span { font-size: .72rem; color: var(--muted); }
-.gacha { font: inherit; font-weight: 700; font-size: .9rem; border: 0; border-radius: 999px; padding: 8px 16px; cursor: pointer; background: var(--accent); color: var(--bg); }
-.gacha:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
-.badges { display: grid; gap: 8px; }
-.badges h2 { font-family: var(--f-display); font-size: 1.1rem; margin: 0; }
-.badges .sub2 { font-size: .8rem; color: var(--muted); margin: 0; }
-.bgrid { display: flex; flex-wrap: wrap; gap: 6px; }
-.badge { font-size: .78rem; border-radius: 999px; padding: 4px 10px; border: 1px dashed var(--line); color: var(--muted); }
-.badge.got { border: 1px solid var(--done); background: var(--done-soft); color: var(--done); font-weight: 700; }
-.badge.new { animation: pop .6s ease; }
-@keyframes pop { 0% { transform: scale(.6); } 60% { transform: scale(1.15); } 100% { transform: scale(1); } }
-.rec[aria-checked="true"] .disc { animation: pop .35s ease; }
-#fx { position: fixed; inset: 0; pointer-events: none; z-index: 50; width: 100%; height: 100%; }
-#toast { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%) translateY(20px); opacity: 0; transition: opacity .25s, transform .25s; z-index: 60; background: var(--ink); color: var(--bg); border-radius: 14px; padding: 12px 18px; max-width: min(92vw, 420px); text-align: center; font-weight: 700; display: grid; gap: 2px; box-shadow: 0 8px 24px rgba(0,0,0,.25); }
-#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-#toast small { font-weight: 500; font-size: .8rem; opacity: .85; }
-#toast.big { background: var(--accent); color: var(--bg); font-size: 1.1rem; }
-@media (prefers-reduced-motion: reduce) { .bar i, .disc { transition: none; } .badge.new, .rec[aria-checked="true"] .disc { animation: none; } #toast { transition: none; } }
+.stat.hot b { color: #ff9a5a; }
+.stat.hot b svg { animation: flicker 1.4s ease-in-out infinite; transform-origin: 50% 100%; }
+
+/* next card */
+.nextcard { border-radius: 20px; background: var(--surface); border: 1px solid var(--line); overflow: hidden; display: grid; }
+.nextcard .nc-top { display: grid; grid-template-columns: 96px 1fr; gap: 14px; padding: 14px; align-items: center; }
+.nextcard .label { font-size: .68rem; letter-spacing: .16em; font-weight: 700; color: var(--accent); }
+.nextcard .label.gacha { color: var(--gold); }
+.nextcard h3 { margin: 2px 0 4px; font-family: var(--f-display); font-size: 1.35rem; line-height: 1.3; text-wrap: balance; }
+.nextcard .meta { font-size: .8rem; color: var(--muted); }
+.nextcard .pre { padding: 0 14px 12px; font-size: .88rem; color: #d3dbea; }
+.nextcard .acts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 0 14px 14px; }
+.btn { border: 1px solid var(--line); background: var(--surface2); border-radius: 12px; padding: 11px 12px; font-weight: 700; font-size: .92rem; cursor: pointer; text-align: center; transition: transform .18s var(--spring), filter .2s; }
+.btn:active { transform: scale(.95); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); box-shadow: 0 6px 18px rgba(79, 134, 232, .35); }
+.btn.gold { position: relative; overflow: hidden; background: linear-gradient(135deg, #f3cf72, #d9a136); border-color: transparent; color: #2a1d05; box-shadow: 0 6px 20px rgba(233, 185, 79, .3); }
+.btn.gold::after { content: ""; position: absolute; top: 0; bottom: 0; width: 40%; left: -60%; background: linear-gradient(100deg, transparent, rgba(255, 255, 255, .55), transparent); animation: shine 3.2s ease-in-out infinite; }
+.btn.ghost { background: transparent; }
+.btn.wide { width: 100%; }
+.recent { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; scroll-snap-type: x mandatory; }
+.recent::-webkit-scrollbar { display: none; }
+.recent .ticket { flex: 0 0 150px; scroll-snap-align: start; }
+.status { font-size: .82rem; color: var(--gold); margin: 0; }
+
+/* poster tile */
+.poster { position: relative; aspect-ratio: 1 / 1; border-radius: 6px; overflow: hidden; display: grid; align-content: space-between; padding: 7px; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .08), 0 4px 12px rgba(0, 0, 0, .3); color: #fff; }
+.poster .ch { font-family: var(--f-display); font-weight: 900; font-size: 1.9em; line-height: 1; text-shadow: 0 2px 8px rgba(0, 0, 0, .35); }
+.poster .yr { font-family: var(--f-mono); font-size: .62em; letter-spacing: .08em; opacity: .85; }
+.poster::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(255,255,255,.14), transparent 40%, rgba(0,0,0,.35)); pointer-events: none; }
+.poster.seen::before { content: ""; position: absolute; right: 5px; top: 5px; width: 18px; height: 18px; border-radius: 50%; background: var(--done) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3.5 8.5l3 3 6-7' fill='none' stroke='%23102018' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 12px no-repeat; z-index: 1; animation: pop .4s var(--spring); }
+
+/* list */
+.seg { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+.seg::-webkit-scrollbar { display: none; }
+.seg button { flex: 0 0 auto; border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 7px 14px; font-size: .85rem; cursor: pointer; white-space: nowrap; transition: background .2s, color .2s, transform .18s var(--spring); }
+.seg button:active { transform: scale(.94); }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); font-weight: 700; }
+.seg button small { font-family: var(--f-mono); margin-left: 6px; opacity: .7; }
+.grouphead { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-top: 8px; }
+.grouphead h3 { margin: 0; font-family: var(--f-display); font-size: 1.05rem; }
+.grouphead h3 span { font-family: var(--f-body); font-size: .75rem; color: var(--muted); font-weight: 500; margin-left: 8px; }
+.grouphead small { font-family: var(--f-mono); color: var(--muted); }
+.gbar { height: 4px; border-radius: 2px; background: rgba(255,255,255,.07); overflow: hidden; }
+.gbar i { display: block; height: 100%; background: var(--done); border-radius: 2px; transition: width .8s var(--ease); }
+.list { display: grid; gap: 8px; list-style: none; margin: 0; padding: 0; }
+.item { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 8px; transition: background .3s, border-color .3s; }
+.anim .item { animation: rise .4s var(--ease) both; animation-delay: calc(var(--i, 0) * 22ms); }
+.item.is-next { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset, 0 0 22px rgba(79, 134, 232, .18); }
+.item.is-done { background: var(--bg2); }
+.open { all: unset; box-sizing: border-box; display: grid; grid-template-columns: 48px 1fr; gap: 12px; align-items: center; cursor: pointer; min-width: 0; border-radius: 10px; }
+.open .poster { font-size: 13px; width: 48px; transition: transform .25s var(--spring); }
+.open:active .poster { transform: scale(.92) rotate(-2deg); }
+.it-txt { min-width: 0; display: grid; gap: 2px; }
+.it-t { font-weight: 700; font-size: .98rem; line-height: 1.35; }
+.item.is-done .it-t { color: var(--muted); }
+.it-sub { font-size: .76rem; color: var(--muted); display: flex; flex-wrap: wrap; gap: 2px 8px; align-items: center; }
+.it-sub .mono { font-family: var(--f-mono); }
+.tag { font-size: .68rem; border-radius: 5px; padding: 0 6px; line-height: 1.7; background: rgba(255,255,255,.06); color: var(--muted); }
+.tag.heavy { background: rgba(233, 185, 79, .14); color: var(--gold); }
+.tag.light { background: rgba(98, 200, 149, .12); color: var(--done); }
+.tag.next { background: var(--accent); color: var(--accent-ink); font-weight: 700; }
+.stars-mini { color: var(--gold); letter-spacing: 1px; font-size: .78rem; }
+.chk { position: relative; width: 44px; height: 44px; border-radius: 50%; border: 2px solid var(--line); background: transparent; display: grid; place-items: center; cursor: pointer; transition: background .25s, border-color .25s; }
+.chk svg { width: 20px; height: 20px; opacity: .25; }
+.chk svg path { stroke-dasharray: 24; stroke-dashoffset: 0; }
+.chk[aria-checked="true"] { background: var(--done); border-color: var(--done); color: #0e2219; }
+.chk[aria-checked="true"] svg { opacity: 1; }
+.chk.pop { animation: pop .45s var(--spring); }
+.chk.pop svg path { animation: draw .35s ease-out; }
+.chk.pop::after { content: ""; position: absolute; inset: -2px; border-radius: 50%; border: 2px solid var(--done); animation: ripple .6s ease-out forwards; }
+.toggle-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.switch { display: inline-flex; align-items: center; gap: 8px; font-size: .85rem; color: var(--muted); cursor: pointer; border: 0; background: none; padding: 4px 0; }
+.switch i { width: 36px; height: 20px; border-radius: 10px; background: var(--line); position: relative; transition: background .2s; }
+.switch i::after { content: ""; position: absolute; left: 2px; top: 2px; width: 16px; height: 16px; border-radius: 50%; background: var(--ink); transition: transform .25s var(--spring); }
+.switch[aria-pressed="true"] i { background: var(--done); }
+.switch[aria-pressed="true"] i::after { transform: translateX(16px); }
+
+/* tickets */
+.tgrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.ticket { position: relative; overflow: hidden; border-radius: 12px; padding: 12px 14px 12px 16px; background: linear-gradient(160deg, #f7ecd6, #ecd9b4); color: #2a1f12; display: grid; gap: 4px; min-width: 0; -webkit-mask: radial-gradient(circle 8px at 0 50%, transparent 98%, #000) left / 51% 100% no-repeat, radial-gradient(circle 8px at 100% 50%, transparent 98%, #000) right / 51% 100% no-repeat; mask: radial-gradient(circle 8px at 0 50%, transparent 98%, #000) left / 51% 100% no-repeat, radial-gradient(circle 8px at 100% 50%, transparent 98%, #000) right / 51% 100% no-repeat; cursor: pointer; border: 0; text-align: left; transition: transform .25s var(--spring); }
+.ticket:active { transform: scale(.96) rotate(-1deg); }
+.ticket .no { font-family: var(--f-mono); font-size: .68rem; letter-spacing: .14em; color: #23407a; font-weight: 600; display: flex; justify-content: space-between; }
+.ticket .tt { font-family: var(--f-display); font-weight: 900; font-size: 1rem; line-height: 1.3; }
+.ticket .td { font-family: var(--f-mono); font-size: .7rem; color: #6b5a40; border-top: 1px dashed rgba(42, 31, 18, .3); padding-top: 4px; display: flex; justify-content: space-between; gap: 6px; }
+.ticket .td .st { color: #b07a10; letter-spacing: 1px; }
+.ticket.gold { background: linear-gradient(160deg, #ffe7a3, #e5b54c); }
+.ticket.gold::after { content: ""; position: absolute; top: 0; bottom: 0; width: 45%; left: -60%; background: linear-gradient(100deg, transparent, rgba(255, 255, 255, .7), transparent); animation: shine 2.8s ease-in-out infinite; pointer-events: none; }
+.ticket.fresh { animation: stamp .7s var(--spring) both; }
+.ticket.empty { background: transparent; color: var(--faint); -webkit-mask: none; mask: none; border: 1px dashed var(--line); display: grid; place-items: center; min-height: 92px; font-family: var(--f-mono); font-size: .8rem; cursor: default; }
+.tnote { font-size: .82rem; color: var(--muted); margin: 0; }
+
+/* awards */
+.awards { display: grid; gap: 10px; }
+.aw { display: grid; grid-template-columns: 44px 1fr auto; gap: 4px 12px; align-items: center; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px; }
+.aw .medal { grid-row: span 2; width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; background: rgba(255,255,255,.05); color: var(--faint); }
+.aw .medal svg { width: 22px; height: 22px; }
+.aw.got { border-color: rgba(233, 185, 79, .45); background: linear-gradient(90deg, var(--gold-soft), var(--surface) 70%); }
+.aw.got .medal { background: radial-gradient(circle at 35% 30%, #ffe9a8, #d39b2a); color: #3a2604; box-shadow: 0 0 18px rgba(233, 185, 79, .35); }
+.aw .an { font-weight: 700; font-size: .95rem; }
+.aw .ad { font-size: .75rem; color: var(--muted); }
+.aw .ap { font-family: var(--f-mono); font-size: .8rem; color: var(--muted); white-space: nowrap; }
+.aw.got .ap { color: var(--gold); }
+.aw .abar { grid-column: 2 / 4; height: 4px; border-radius: 2px; background: rgba(255,255,255,.07); overflow: hidden; }
+.aw .abar i { display: block; height: 100%; background: var(--gold); transition: width .9s var(--ease); }
+.rankladder { display: grid; gap: 6px; }
+.rl { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border-radius: 10px; background: var(--surface); border: 1px solid var(--line); font-size: .88rem; }
+.rl b { font-family: var(--f-display); }
+.rl span { font-family: var(--f-mono); color: var(--muted); font-size: .8rem; }
+.rl.cur { border-color: var(--gold); background: var(--gold-soft); box-shadow: 0 0 16px rgba(233, 185, 79, .18); }
+.rl.past b { color: var(--gold); }
+
+/* bottom nav */
+.nav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; background: rgba(15, 18, 25, .92); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); border-top: 1px solid var(--line); padding: 6px max(10px, env(safe-area-inset-right, 0px)) calc(6px + env(safe-area-inset-bottom, 0px)) max(10px, env(safe-area-inset-left, 0px)); }
+.nav .in { max-width: 560px; margin: 0 auto; display: grid; grid-template-columns: repeat(4, 1fr); }
+.tab { border: 0; background: none; display: grid; justify-items: center; gap: 2px; padding: 6px 0; font-size: .7rem; color: var(--faint); cursor: pointer; position: relative; transition: color .2s; }
+.tab svg { width: 22px; height: 22px; transition: transform .25s var(--spring); }
+.tab[aria-current="page"] { color: var(--ink); }
+.tab[aria-current="page"] svg { color: var(--gold); transform: translateY(-2px) scale(1.08); }
+.tab .dot { position: absolute; top: 2px; left: calc(50% + 8px); min-width: 16px; height: 16px; border-radius: 8px; background: var(--accent); color: #fff; font-size: .62rem; font-family: var(--f-mono); display: grid; place-items: center; padding: 0 4px; }
+.tab .dot.bump { animation: bump .5s var(--spring); }
+
+/* sheet */
+.backdrop { position: fixed; inset: 0; background: rgba(0, 0, 0, .55); z-index: 40; opacity: 0; transition: opacity .25s; }
+.backdrop.show { opacity: 1; }
+.sheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 41; max-height: 90vh; max-height: 90dvh; background: var(--bg2); border-radius: 22px 22px 0 0; border-top: 1px solid var(--line); transform: translateY(105%); transition: transform .38s var(--ease); display: grid; grid-template-rows: auto 1fr auto; box-shadow: var(--shadow); }
+.sheet.show { transform: translateY(0); }
+.sheet .in { max-width: 560px; width: 100%; margin: 0 auto; box-sizing: border-box; padding-left: max(18px, env(safe-area-inset-left, 0px)); padding-right: max(18px, env(safe-area-inset-right, 0px)); }
+.sheet .grab { width: 40px; height: 5px; border-radius: 3px; background: var(--line); margin: 10px auto 0; }
+.sheet .body { overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+.sh-head { display: grid; grid-template-columns: 96px 1fr; gap: 16px; padding-block: 14px 6px; align-items: end; }
+.sh-head .poster { font-size: 22px; width: 96px; }
+.sheet.show .sh-head .poster { animation: tilt .6s var(--spring) both; }
+.sh-head h3 { margin: 0; font-family: var(--f-display); font-size: 1.5rem; line-height: 1.25; text-wrap: balance; }
+.sh-head .orig { font-size: .8rem; color: var(--muted); font-style: italic; margin-top: 2px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; padding-block: 8px; }
+.chip { font-size: .75rem; border-radius: 999px; padding: 3px 10px; background: var(--surface); border: 1px solid var(--line); color: #d3dbea; }
+.chip.svc { border-color: rgba(233, 185, 79, .4); color: var(--gold); }
+.notes { display: grid; gap: 16px; padding-block: 8px 20px; }
+.sheet.show .notes > div { animation: rise .45s var(--ease) both; }
+.sheet.show .notes > div:nth-child(2) { animation-delay: .05s; }
+.sheet.show .notes > div:nth-child(3) { animation-delay: .1s; }
+.sheet.show .notes > div:nth-child(n+4) { animation-delay: .15s; }
+.notes .nt { font-size: .7rem; letter-spacing: .16em; color: var(--gold); font-weight: 700; margin-bottom: 4px; }
+.notes p { margin: 0; line-height: 1.85; font-size: .93rem; color: #e2e8f3; }
+.notes ul { margin: 0; padding-left: 1.1em; display: grid; gap: 6px; line-height: 1.75; font-size: .93rem; color: #e2e8f3; }
+.notes .q { border-left: 3px solid var(--accent); padding: 6px 12px; background: var(--surface); border-radius: 0 10px 10px 0; font-family: var(--f-display); font-weight: 700; }
+.sh-foot { border-top: 1px solid var(--line); padding-block: 10px calc(10px + env(safe-area-inset-bottom, 0px)); background: var(--bg2); }
+.sh-foot .row { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; }
+.rate { display: flex; gap: 2px; justify-content: center; }
+.sh-foot .rate { justify-content: flex-start; }
+.star { border: 0; background: none; padding: 4px; cursor: pointer; color: var(--line); font-size: 1.6rem; line-height: 1; transition: transform .2s var(--spring), color .15s; }
+.star.on { color: var(--gold); text-shadow: 0 0 10px rgba(233, 185, 79, .5); }
+.star.pulse { animation: bump .45s var(--spring); }
+.star:active { transform: scale(1.35); }
+.seenline { font-size: .82rem; color: var(--done); }
+
+/* overlays */
+#fx { position: fixed; inset: 0; pointer-events: none; z-index: 70; width: 100%; height: 100%; }
+.toast { position: fixed; left: 50%; bottom: calc(84px + env(safe-area-inset-bottom, 0px)); transform: translate(-50%, 24px) scale(.96); opacity: 0; pointer-events: none; transition: opacity .25s, transform .35s var(--spring); z-index: 60; background: var(--ink); color: var(--bg); border-radius: 16px; padding: 10px 16px; width: min(92vw, 380px); box-sizing: border-box; display: grid; gap: 4px; justify-items: center; box-shadow: var(--shadow); text-align: center; }
+.toast.show { opacity: 1; transform: translate(-50%, 0) scale(1); pointer-events: auto; }
+.toast b { font-size: 1rem; }
+.toast small { font-size: .78rem; opacity: .75; }
+.toast .rate .star { color: #cfc6d8; font-size: 1.5rem; text-shadow: none; }
+.toast .rate .star.on { color: #d79a1d; }
+.modal { position: fixed; inset: 0; z-index: 65; display: grid; place-items: center; padding: 24px; background: rgba(6, 8, 14, .72); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); opacity: 0; pointer-events: none; transition: opacity .25s; }
+.modal.show { opacity: 1; pointer-events: auto; }
+.mcard { position: relative; overflow: hidden; width: min(88vw, 360px); border-radius: 24px; padding: 26px 22px 20px; text-align: center; display: grid; gap: 10px; justify-items: center; background: radial-gradient(120% 80% at 50% 0%, #4a3410, var(--surface) 65%); border: 1px solid rgba(233, 185, 79, .5); box-shadow: 0 0 60px rgba(233, 185, 79, .25), var(--shadow); transform: scale(.7) translateY(20px); transition: transform .5s var(--spring); }
+.mcard::before { content: ""; position: absolute; inset: -50%; background: conic-gradient(from 0deg, transparent 0 10%, rgba(233, 185, 79, .14) 12% 16%, transparent 18% 35%, rgba(233, 185, 79, .14) 37% 41%, transparent 43% 60%, rgba(233, 185, 79, .14) 62% 66%, transparent 68% 85%, rgba(233, 185, 79, .14) 87% 91%, transparent 93%); animation: sweep 12s linear infinite; pointer-events: none; }
+.mcard > * { position: relative; }
+.modal.show .mcard { transform: none; }
+.mcard .kick { font-size: .72rem; letter-spacing: .3em; color: var(--gold); font-weight: 700; }
+.mcard .medal { width: 84px; height: 84px; border-radius: 50%; display: grid; place-items: center; background: radial-gradient(circle at 35% 30%, #fff0bf, #d39b2a); color: #3a2604; box-shadow: 0 0 40px rgba(233, 185, 79, .55); animation: medal 1.1s var(--ease) both; }
+.mcard .medal svg { width: 40px; height: 40px; }
+.mcard h3 { margin: 0; font-family: var(--f-display); font-weight: 900; font-size: 1.7rem; line-height: 1.25; text-wrap: balance; animation: rise .5s var(--ease) .35s both; }
+.mcard p { margin: 0; color: var(--muted); font-size: .88rem; animation: rise .5s var(--ease) .45s both; }
+.mcard .btn { animation: rise .5s var(--ease) .55s both; }
+.slot { width: min(88vw, 360px); border-radius: 24px; padding: 22px; background: var(--surface); border: 1px solid var(--line); display: grid; gap: 14px; text-align: center; box-shadow: var(--shadow); transform: scale(.9); transition: transform .4s var(--spring); }
+.modal.show .slot { transform: none; }
+.slot .kick { font-size: .72rem; letter-spacing: .3em; color: var(--gold); font-weight: 700; }
+.slot .reel { height: 120px; display: grid; grid-template-columns: 80px 1fr; gap: 14px; align-items: center; text-align: left; border-radius: 16px; background: var(--bg2); padding: 10px; overflow: hidden; border: 1px solid var(--line); transition: border-color .3s, box-shadow .3s; }
+.slot .reel .poster { font-size: 18px; width: 80px; }
+.slot .reel h3 { margin: 0; font-family: var(--f-display); font-size: 1.25rem; line-height: 1.3; }
+.slot .reel p { margin: 4px 0 0; font-size: .78rem; color: var(--muted); }
+.slot .reel.spin > * { animation: reel .09s linear; }
+.slot .reel.landed { border-color: var(--gold); box-shadow: 0 0 24px rgba(233, 185, 79, .35); animation: bump .5s var(--spring); }
+.slot .acts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; transition: opacity .3s; }
+
+@keyframes pop { 0% { transform: scale(.7); } 60% { transform: scale(1.18); } 100% { transform: scale(1); } }
+@keyframes bump { 0% { transform: scale(1); } 40% { transform: scale(1.28); } 100% { transform: scale(1); } }
+@keyframes rise { from { transform: translateY(10px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes ripple { from { transform: scale(1); opacity: .9; } to { transform: scale(1.8); opacity: 0; } }
+@keyframes draw { from { stroke-dashoffset: 24; } to { stroke-dashoffset: 0; } }
+@keyframes shine { 0%, 60% { left: -60%; } 100% { left: 130%; } }
+@keyframes flow { from { background-position: 0 0; } to { background-position: -200% 0; } }
+@keyframes sweep { to { transform: rotate(360deg); } }
+@keyframes flicker { 0%, 100% { transform: scaleY(1) rotate(-2deg); } 50% { transform: scaleY(1.12) rotate(2deg); } }
+@keyframes stamp { 0% { transform: scale(1.5) rotate(-10deg); opacity: 0; } 60% { transform: scale(.95) rotate(2deg); opacity: 1; } 100% { transform: none; } }
+@keyframes tilt { 0% { transform: translateY(16px) rotate(-6deg) scale(.9); opacity: 0; } 100% { transform: none; opacity: 1; } }
+@keyframes medal { 0% { transform: rotateY(0) scale(.3); } 70% { transform: rotateY(700deg) scale(1.1); } 100% { transform: rotateY(720deg) scale(1); } }
+@keyframes reel { from { transform: translateY(-40%); opacity: .3; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@media (max-width: 380px) {
+  .hero { grid-template-columns: 110px 1fr; padding: 16px; gap: 14px; }
+  .ring { width: 110px; height: 110px; }
+  .ring .num b { font-size: 2rem; }
+  .rankbox .rname { font-size: 1.3rem; }
+}
+/* 名盤100: 洋楽／邦楽の切り替え */
+.poster, .slot, .mcard { box-sizing: border-box; }
+.open { grid-template-columns: 58px 1fr; }
+.open .poster { width: 58px; font-size: 14px; }
+.shelf { display: grid; grid-template-columns: 1fr 1fr; background: var(--bg2); border: 1px solid var(--line); border-radius: 999px; padding: 3px; position: relative; }
+.shelf button { border: 0; background: none; border-radius: 999px; padding: 6px 12px; font-size: .85rem; font-weight: 700; color: var(--faint); cursor: pointer; position: relative; z-index: 1; transition: color .2s; display: flex; gap: 6px; align-items: baseline; justify-content: center; }
+.shelf button small { font-family: var(--f-mono); font-weight: 500; font-size: .7rem; opacity: .8; }
+.shelf button[aria-selected="true"] { color: var(--bg); }
+.shelf i { position: absolute; top: 3px; bottom: 3px; left: 3px; width: calc(50% - 3px); border-radius: 999px; background: var(--gold); transition: transform .35s var(--spring); }
+.shelf[data-k="hogaku"] i { transform: translateX(100%); }
+.shelf button:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.topbar .shelf { flex: 0 1 190px; }
+.poster .lbl { position: absolute; right: -14%; bottom: -14%; width: 52%; aspect-ratio: 1; border-radius: 50%; background: repeating-radial-gradient(circle, rgba(0,0,0,.55) 0 2px, rgba(0,0,0,.38) 2px 4px); box-shadow: 0 0 0 1px rgba(255,255,255,.06); pointer-events: none; }
+.poster .lbl::after { content: ""; position: absolute; inset: 34%; border-radius: 50%; background: var(--gold); opacity: .85; }
+.it-a { font-size: .8rem; color: #c7cfdf; }
+.item.is-done .it-a { color: var(--faint); }
+.sh-head .art { font-size: .9rem; font-weight: 700; margin-top: 4px; }
+.chip.warn { border-color: rgba(233, 185, 79, .55); color: var(--gold); background: var(--gold-soft); }
+.first { font-size: .8rem; color: var(--muted); padding: 0 14px 10px; }
+.first b { color: var(--ink); font-weight: 700; }
+.ticket { background: linear-gradient(160deg, #eef1f6, #d9dfea); color: #1b2131; }
+.ticket.gold { background: linear-gradient(160deg, #ffe7a3, #e5b54c); color: #2a1d05; }
+.ticket .td { color: #4b566c; border-top-color: rgba(27, 33, 49, .25); }
+.ticket .ta { font-size: .72rem; color: #4b566c; line-height: 1.3; }
+.ticket.gold .ta { color: #5a4310; }
+
 </style>
-</head>
-<body>
-<div class="wrap">
-  <header>
-    <h1>名盤100枚</h1>
-    <div class="tabs" role="tablist" aria-label="洋楽と邦楽">
-      <button class="tab" role="tab" id="tab-yogaku" type="button" aria-selected="true">洋楽<small id="tabn-yogaku">0／100</small></button>
-      <button class="tab" role="tab" id="tab-hogaku" type="button" aria-selected="false">邦楽<small id="tabn-hogaku">0／100</small></button>
+
+<div class="app">
+  <section class="view" id="v-home" aria-label="ホーム">
+    <div class="topbar">
+      <div class="brand">名盤<span>100</span></div>
+      <div class="shelf" data-shelf role="tablist" aria-label="洋楽と邦楽"></div>
+      <button class="iconbtn" id="soundBtn" type="button" aria-label="効果音" aria-pressed="true"></button>
     </div>
-    <div class="count"><b id="done">0</b><span>／100枚 聴いた</span><span id="left"></span></div>
-    <div class="bar" aria-hidden="true"><i id="barfill"></i></div>
-    <div class="rank" id="rank"></div>
+    <div class="hero">
+      <div class="ring" aria-hidden="true">
+        <svg viewBox="0 0 120 120"><defs><linearGradient id="rg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffd98a"/><stop offset="1" stop-color="#4f86e8"/></linearGradient></defs><circle class="track" cx="60" cy="60" r="52" fill="none" stroke-width="10"/><circle class="fill" id="ringFill" cx="60" cy="60" r="52" fill="none" stroke="url(#rg)" stroke-width="10" stroke-linecap="round" stroke-dasharray="326.73" stroke-dashoffset="326.73"/></svg>
+        <div class="num"><div><b id="cnt">0</b><span id="cntUnit">／100枚</span></div></div>
+      </div>
+      <div class="rankbox">
+        <small id="rlabel">称号</small>
+        <div class="rname" id="rname">見習い</div>
+        <div class="rbar"><i id="rbar"></i></div>
+        <div class="rnext" id="rnext"></div>
+      </div>
+    </div>
     <div class="stats" id="stats"></div>
-    <div class="next" id="next"></div>
-    <div class="tools"><button class="gacha" id="gacha" type="button">迷ったら：今日の1枚を引く</button></div>
     <p class="status" id="status" hidden></p>
-    <div class="tools">
-      <button class="chip" id="hideDone" type="button" aria-pressed="false">聴いたアルバムをかくす</button>
-      <button class="chip" id="copyRec" type="button">記録をコピー（クロコに渡す）</button>
+    <div class="nextcard" id="nextcard"></div>
+    <button class="btn gold wide" id="gachaBtn" type="button">迷ったら 今日の1枚を引く</button>
+    <h2 class="sec" id="recentHead" hidden>最近の棚入り <small id="recentCount"></small></h2>
+    <div class="recent" id="recent"></div>
+  </section>
+
+  <section class="view" id="v-list" aria-label="リスト" hidden>
+    <div class="topbar"><div class="brand">リスト</div><div class="shelf" data-shelf role="tablist" aria-label="洋楽と邦楽"></div></div>
+    <div class="seg" id="seg" role="group" aria-label="年代でしぼる"></div>
+    <div class="toggle-row">
+      <button class="switch" id="hideSwitch" type="button" aria-pressed="false"><i></i>聴いたアルバムをかくす</button>
+      <small class="tnote" id="listCount"></small>
     </div>
-    <textarea id="recBox" hidden rows="6" style="width:100%;font:inherit;font-size:.85rem" aria-label="記録"></textarea>
-  </header>
-  <section class="badges" id="badges"></section>
-  <main id="groups" role="tabpanel" style="display:grid;gap:28px"></main>
-  <canvas id="fx" aria-hidden="true"></canvas>
-  <div id="toast" role="status" aria-live="polite"></div>
-  <footer>
-    <p>上のタブで洋楽と邦楽を切り替えます。記録はタブごとに別々です。左の丸をタップすると「聴いた」になり、もう一度タップで戻ります。チェックはこのスマホのブラウザの中に保存されます（別のスマホやブラウザには引き継がれません）。ときどき「記録をコピー」でクロコに渡してください（洋楽と邦楽の両方がまとめてコピーされます）。</p>
-    <p>並びは発売順です。上から順に聴くと、前のアルバムが次のアルバムにどう影響したかが分かるようにしてあります。タイトルをタップすると聴く前のメモが開きます。</p>
-    <p>メモと収録時間はクロコが書いた目安です（デラックス版やリマスター版は曲が増えて長くなります）。批評家の評価やよく言われる感想として知っていることから書いたもので、レビューサイトを直接読んだものではありません。</p>
-    <p>配信は 2026-11-05 時点の目安です。ほとんどは Spotify・Apple Music・Amazon Music にありますが、山下達郎のように定額配信をしていない人もいます。その場合は黄色い注意書きを付けています。</p>
-  </footer>
+    <div id="lists" style="display:grid;gap:14px"></div>
+  </section>
+
+  <section class="view" id="v-tickets" aria-label="レコード棚" hidden>
+    <div class="topbar"><div class="brand">レコード棚</div><div class="shelf" data-shelf role="tablist" aria-label="洋楽と邦楽"></div></div>
+    <p class="tnote" id="ticketNote"></p>
+    <div class="tgrid" id="tgrid"></div>
+    <button class="btn wide" id="copyBtn" type="button" hidden>記録をコピー（クロコに渡す）</button>
+    <textarea id="recBox" hidden rows="6" style="width:100%;box-sizing:border-box;font:inherit;font-size:.85rem;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:8px" aria-label="記録"></textarea>
+  </section>
+
+  <section class="view" id="v-awards" aria-label="実績" hidden>
+    <div class="topbar"><div class="brand">実績</div><div class="shelf" data-shelf role="tablist" aria-label="洋楽と邦楽"></div></div>
+    <h2 class="sec">称号 <small id="ladderNote"></small></h2>
+    <div class="rankladder" id="ladder"></div>
+    <h2 class="sec">バッジ <small id="awardCount"></small></h2>
+    <div class="awards" id="awards"></div>
+    <p class="tnote">聴く前のメモと収録時間はクロコが書いた目安です（デラックス版などは長くなります）。批評家の評価やよく言われる感想として知っていることから書いていて、レビューサイトを直接読んだものではありません。配信は 2026-11-05 時点の目安で、ほとんどは Spotify・Apple Music・Amazon Music にあります。定額配信をしていない作品には「配信なし」の印を付けています。</p>
+  </section>
 </div>
+
+<nav class="nav" aria-label="画面の切り替え"><div class="in" id="tabs"></div></nav>
+
+<div class="backdrop" id="backdrop" hidden></div>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="shTitle" hidden>
+  <div class="grab" aria-hidden="true"></div>
+  <div class="body"><div class="in" id="shBody"></div></div>
+  <div class="sh-foot"><div class="in" id="shFoot"></div></div>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div class="modal" id="modal" hidden></div>
+<canvas id="fx" aria-hidden="true"></canvas>
 
 <script src="yogaku.js"></script>
 <script src="hogaku.js"></script>
 <script>
-// ---- 2つの棚（タブ）の定義 ----
+/* ---- 2つの棚 ---- */
 const SHELVES = {
   yogaku: {
-    key: "yogaku", name: "洋楽", data: YOGAKU, store: "meiban100-yogaku-v1",
-    eras: [["1960年代", "ロックがアルバムで語り始めた", 0, 1969], ["1970年代", "ハードロック、ソウル、パンク", 1970, 1979], ["1980年代", "MTV、メタル、ヒップホップの台頭", 1980, 1989], ["1990年代", "オルタナ、ブリットポップ、サンプリング", 1990, 1999], ["2000年代以降", "インディ、R&B、配信の時代", 2000, 9999]],
-    sets: [["ビートルズ3枚", [5, 10, 15]], ["プログレ", [14, 26, 27]], ["パンク", [31, 34, 37, 41, 74]], ["ソウル", [2, 11, 18, 28, 88]], ["ヒップホップ", [55, 65, 66, 69, 92, 95]], ["ボウイの最初と最後", [24, 97]], ["オルタナ", [56, 60, 61, 62, 68]]]
+    key: "yogaku", name: "洋楽", data: YOGAKU,
+    eras: [["60s", "1960年代", "ロックがアルバムで語り始めた", 0, 1969], ["70s", "1970年代", "ハードロック、ソウル、パンク", 1970, 1979], ["80s", "1980年代", "MTV、メタル、ヒップホップ", 1980, 1989], ["90s", "1990年代", "オルタナ、ブリットポップ、サンプリング", 1990, 1999], ["00s", "2000年代〜", "インディ、R&B、配信の時代", 2000, 9999]],
+    sets: [["ビートルズ3枚", "ビートルズの3枚を全部", [5, 10, 15]], ["プログレ", "クリムゾン、イエス、フロイド", [14, 26, 27]], ["パンク", "ラモーンズからグリーン・デイまで", [31, 34, 37, 41, 74]], ["ソウル", "オーティスからエイミーまで", [2, 11, 18, 28, 88]], ["ヒップホップ", "パブリック・エナミーからケンドリックまで", [55, 65, 66, 69, 92, 95]], ["ボウイの最初と最後", "ジギーと★", [24, 97]], ["オルタナ", "ピクシーズからスマパンまで", [56, 60, 61, 62, 68]]]
   },
   hogaku: {
-    key: "hogaku", name: "邦楽", data: HOGAKU, store: "meiban100-hogaku-v1",
-    eras: [["1970年代", "日本語のロックとフォーク、ニューミュージック", 0, 1979], ["1980年代", "シティポップ、アイドル、バンドブーム", 1980, 1989], ["1990年代", "渋谷系、ミリオンセラー、ヴィジュアル系", 1990, 1999], ["2000年代", "歌姫、ギターロック、テクノポップ", 2000, 2009], ["2010年代以降", "配信とネットから生まれた音", 2010, 9999]],
-    sets: [["はっぴいえんど一家", [1, 3, 14, 17, 18]], ["渋谷系", [36, 38, 39, 52]], ["シティポップ", null], ["ヒップホップ", null], ["電子", null], ["フォーク", null]]
+    key: "hogaku", name: "邦楽", data: HOGAKU,
+    eras: [["70s", "1970年代", "日本語のロックとフォーク", 0, 1979], ["80s", "1980年代", "シティポップ、アイドル、バンドブーム", 1980, 1989], ["90s", "1990年代", "渋谷系、ミリオン、ヴィジュアル系", 1990, 1999], ["00s", "2000年代", "歌姫、ギターロック、テクノポップ", 2000, 2009], ["10s", "2010年代〜", "配信とネットから生まれた音", 2010, 9999]],
+    sets: [["はっぴいえんど一家", "4人とその仕事を全部", [1, 3, 14, 17, 18]], ["渋谷系", "フリッパーズからコーネリアスまで", [36, 38, 39, 52]], ["シティポップ", null, null], ["ヒップホップ", null, null], ["電子", null, null], ["フォーク", null, null]]
   }
 };
 const RANKS = [[0, "見習い"], [5, "音楽好き"], [10, "リスナー"], [25, "常連"], [40, "音楽通"], [60, "ディガー"], [80, "レコード屋の主"], [100, "名盤マスター"]];
-const PRAISE = ["ナイス！", "また1枚。", "いい音だった？", "名盤を1枚ストック。", "積み上がってる。", "その調子。"];
-
-for (const sh of Object.values(SHELVES)) {
-  sh.by = Object.fromEntries(sh.data.map(x => [x.n, x]));
-  sh.order = sh.data.map(x => x.n);
-  sh.groups = sh.eras.map(([name, note, from, to]) => ({ name, note, items: sh.data.filter(x => x.y >= from && x.y <= to) }));
-  const ach = [];
-  for (const g of sh.groups) ach.push({ id: "era-" + g.name, label: `${g.name}制覇`, ks: g.items.map(x => x.n) });
-  for (const [label, ks] of sh.sets) {
-    const list = ks || sh.data.filter(x => x.g === label).map(x => x.n);
-    ach.push({ id: "set-" + label, label: ks ? `${label}コンプ` : `${label}を全部`, ks: list });
+for (const S of Object.values(SHELVES)) {
+  S.by = Object.fromEntries(S.data.map(x => [x.n, x]));
+  S.order = S.data.map(x => x.n);
+  S.groups = S.eras.map(([key, name, note, from, to]) => ({ key, name, note, items: S.data.filter(x => x.y >= from && x.y <= to) }));
+  const list = [];
+  for (const g of S.groups) list.push({ id: "era-" + g.key, label: `${g.name}制覇`, desc: `${S.name}の${g.name}の${g.items.length}枚を全部`, ks: g.items.map(x => x.n) });
+  for (const [label, desc, ks] of S.sets) {
+    const pick = ks || S.data.filter(x => x.g === label).map(x => x.n);
+    list.push({ id: "set-" + label, label: ks ? `${label}コンプ` : `${label}を全部`, desc: desc || `${label}の${pick.length}枚を全部`, ks: pick });
   }
-  ach.push({ id: "long", label: "1時間超えを全部", ks: sh.order.filter(k => sh.by[k].min >= 60) });
-  ach.push({ id: "hard", label: "手ごわいを10枚", need: 10, ks: sh.order.filter(k => sh.by[k].mood === "手ごわい") });
-  ach.push({ id: "easy", label: "聴きやすいを10枚", need: 10, ks: sh.order.filter(k => sh.by[k].mood === "聴きやすい") });
-  sh.ach = ach;
-  sh.heard = {};
-  sh.gachaPick = null;
+  list.push({ id: "long", label: "1時間超えを全部", desc: "60分以上の大作をすべて", ks: S.order.filter(k => S.by[k].min >= 60) });
+  list.push({ id: "hard10", label: "手ごわいを10枚", desc: "とっつきにくい名盤を10枚", need: 10, ks: S.order.filter(k => S.by[k].mood === "手ごわい") });
+  list.push({ id: "easy10", label: "聴きやすいを10枚", desc: "気楽に聴ける名盤を10枚", need: 10, ks: S.order.filter(k => S.by[k].mood === "聴きやすい") });
+  list.push({ id: "rate10", label: "評論家", desc: "10枚に星をつける", need: 10, rated: true, ks: S.order });
+  S.ach = list;
+  S.W = {};
 }
+
+const ls = {
+  get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); return true; } catch (e) { return false; } }
+};
+let S = SHELVES[ls.get("meiban100-shelf")] || SHELVES.yogaku;
+let W = S.W;
+let mode = "loading";
+let filter = "all";
+let fresh = null;
+let listAnim = true;
+let hideDone = ls.get("meiban100-hide") === "1";
+let sound = ls.get("meiban100-sound") !== "0";
 
 const $ = id => document.getElementById(id);
-const CHECK = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3.2 3L13 4.5" fill="none" stroke="var(--surface)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-function el(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
-function today() { const d = new Date(Date.now() + 9 * 3600e3 - 6 * 3600e3); return d.toISOString().slice(0, 10); } // JST、1日は朝6時から
-function fmt(d) { const p = String(d).split("-"); return p.length === 3 ? `${+p[1]}/${+p[2]}` : ""; }
+function h(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+const ICON = {
+  home: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>',
+  list: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8 6h13M8 12h13M8 18h13"/><circle cx="4" cy="6" r="1.2" fill="currentColor"/><circle cx="4" cy="12" r="1.2" fill="currentColor"/><circle cx="4" cy="18" r="1.2" fill="currentColor"/></svg>',
+  record: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/><path d="M12 5.5a6.5 6.5 0 0 1 6.5 6.5" stroke-linecap="round"/></svg>',
+  trophy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4h8v5a4 4 0 0 1-8 0zM8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8 21h8M9 17h6"/></svg>',
+  check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+  flame: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c1 3.5 5 5.5 5 11a5 5 0 0 1-10 0c0-2.4 1.2-4 2.5-5.2.2 1.6 1 2.6 2 3.2C11 8 11 5 12 2z"/></svg>',
+  medal: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="14" r="6"/><path d="M8.5 9 6 3h4l2 4 2-4h4l-2.5 6M12 11.5l.9 1.8 2 .3-1.4 1.4.3 2-1.8-1-1.8 1 .3-2-1.4-1.4 2-.3z"/></svg>',
+  soundOn: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>',
+  soundOff: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M17 9l5 6M22 9l-5 6"/></svg>'
+};
 
-let cur = SHELVES.yogaku;
-let hideDone = false;
-const openMemo = new Set();
-let newBadges = new Set();
-try { hideDone = localStorage.getItem("meiban100-hide") === "1"; } catch (e) {}
-try { const t = localStorage.getItem("meiban100-tab"); if (SHELVES[t]) cur = SHELVES[t]; } catch (e) {}
-if (SHELVES[location.hash.slice(1)]) cur = SHELVES[location.hash.slice(1)];
+/* time: JST (+9h) with the day starting at 6:00 (−6h) */
+function today() { return new Date(Date.now() + 3 * 3600e3).toISOString().slice(0, 10); }
+function md(d) { const [, m, dd] = d.split("-"); return `${+m}/${+dd}`; }
+function weekKey(d) { const t = new Date(d + "T00:00:00Z"); t.setUTCDate(t.getUTCDate() - ((t.getUTCDay() + 6) % 7)); return t.toISOString().slice(0, 10); }
 
-// ---- 保存 ----
-function load(sh) {
-  try { const v = JSON.parse(localStorage.getItem(sh.store) || "{}"); return v && typeof v === "object" ? v : {}; }
-  catch (e) { return {}; }
-}
-function save(sh) {
-  try { localStorage.setItem(sh.store, JSON.stringify(sh.heard)); return true; }
-  catch (e) { setStatus("このブラウザでは記録を保存できません（プライベートモードなど）。", "warn"); return false; }
-}
-function setStatus(msg, kind) { const s = $("status"); s.textContent = msg; s.dataset.kind = kind || ""; s.hidden = !msg; }
-
-// ---- ゲーム要素 ----
-function rankOf(c) { let r = RANKS[0]; for (const x of RANKS) if (c >= x[0]) r = x; return r; }
-function nextRank(c) { return RANKS.find(x => x[0] > c) || null; }
-function achProgress(a, w) { const got = a.ks.filter(k => w[k]).length; const need = a.need || a.ks.length; return { got: Math.min(got, need), need, done: got >= need }; }
-function weekKey(d) { const t = new Date(d + "T00:00:00Z"); const day = (t.getUTCDay() + 6) % 7; t.setUTCDate(t.getUTCDate() - day); return t.toISOString().slice(0, 10); }
-function stats(sh) {
-  const w = sh.heard, ks = Object.keys(w);
-  const minutes = ks.reduce((a, k) => a + ((sh.by[k] || {}).min || 0), 0);
-  // 連続週は洋楽・邦楽どちらかを聴いた週で数える
-  const all = Object.values(SHELVES).flatMap(s => Object.values(s.heard)).filter(Boolean);
+const rankOf = c => RANKS.reduce((r, x) => (c >= x[0] ? x : r), RANKS[0]);
+const nextRank = c => RANKS.find(x => x[0] > c) || null;
+const A = k => S.by[k];
+function achProg(a, w) { const got = a.ks.filter(k => w[k] && (!a.rated || w[k].r > 0)).length; const need = a.need || a.ks.length; return { got: Math.min(got, need), need, done: got >= need }; }
+function stats() {
+  const ks = Object.keys(W);
+  const minutes = ks.reduce((a, k) => a + (A(k) ? A(k).min : 0), 0);
+  // 今週と連続週は洋楽・邦楽あわせて数える
+  const all = Object.values(SHELVES).flatMap(s => Object.values(s.W).map(v => v.d)).filter(Boolean);
   const thisWeek = weekKey(today());
   const weeks = new Set(all.map(weekKey));
-  let streak = 0; const c = new Date(thisWeek + "T00:00:00Z");
-  if (!weeks.has(thisWeek)) c.setUTCDate(c.getUTCDate() - 7);
-  while (weeks.has(c.toISOString().slice(0, 10))) { streak++; c.setUTCDate(c.getUTCDate() - 7); }
-  const week = all.filter(d => weekKey(d) === thisWeek).length;
-  return { count: ks.length, minutes, week, streak };
+  let streak = 0; const cur = new Date(thisWeek + "T00:00:00Z");
+  if (!weeks.has(thisWeek)) cur.setUTCDate(cur.getUTCDate() - 7);
+  while (weeks.has(cur.toISOString().slice(0, 10))) { streak++; cur.setUTCDate(cur.getUTCDate() - 7); }
+  return { count: ks.length, minutes, week: all.filter(d => weekKey(d) === thisWeek).length, streak };
 }
-function snapshot(sh) { const w = { ...sh.heard }; const c = Object.keys(w).length; return { count: c, rank: rankOf(c)[1], ach: new Set(sh.ach.filter(a => achProgress(a, w).done).map(a => a.id)) }; }
+function snapshot() { const c = Object.keys(W).length; return { count: c, rank: rankOf(c)[1], ach: new Set(S.ach.filter(a => achProg(a, W).done).map(a => a.id)) }; }
+const nextAlbum = () => (S.gachaPick && !W[S.gachaPick] ? S.gachaPick : S.order.find(k => !W[k]));
+const byDateAsc = () => S.order.filter(k => W[k]).sort((a, b) => (W[a].d || "").localeCompare(W[b].d || "") || a - b);
+const shelfNo = () => Object.fromEntries(byDateAsc().map((k, i) => [k, i + 1]));
 
-// ---- 描画 ----
-function render() {
-  const sh = cur;
-  for (const s of Object.values(SHELVES)) {
-    const on = s === sh;
-    $("tab-" + s.key).setAttribute("aria-selected", on ? "true" : "false");
-    $("tabn-" + s.key).textContent = `${Object.keys(s.heard).length}／100`;
-  }
-  const n = Object.keys(sh.heard).length;
-  $("done").textContent = n;
-  $("barfill").style.width = n + "%";
-  const leftMin = sh.order.filter(k => !sh.heard[k]).reduce((a, k) => a + sh.by[k].min, 0);
-  $("left").textContent = leftMin ? `残り約${Math.round(leftMin / 60)}時間` : "";
-  if (sh.gachaPick && sh.heard[sh.gachaPick]) sh.gachaPick = null;
-  const nextN = sh.gachaPick || sh.order.find(k => !sh.heard[k]);
-  const nx = $("next"); nx.innerHTML = "";
-  if (nextN) {
-    const x = sh.by[nextN];
-    nx.append(el("small", "", sh.gachaPick ? `今日の1枚（${sh.name}ガチャ）` : `次に聴く1枚（${sh.name}）`), el("strong", "", x.t), el("em", "", `${x.y}年・${x.a}・約${x.min}分・まず「${x.first}」`));
-    if (x.s) nx.append(el("span", "warn", x.s));
-  } else {
-    nx.textContent = `${sh.name}100枚ぜんぶ聴きました。`;
-  }
-  renderGame();
-  const root = $("groups"); root.innerHTML = "";
-  root.setAttribute("aria-labelledby", "tab-" + sh.key);
-  for (const g of sh.groups) {
-    const sec = el("section");
-    const head = el("div", "sec-head");
-    const h2 = el("h2", "", g.name); h2.append(el("span", "", g.note));
-    head.append(h2, el("div", "n", `${g.items.filter(x => sh.heard[x.n]).length}／${g.items.length}`));
-    sec.append(head);
-    const ul = el("ul");
-    for (const x of g.items) {
-      if (hideDone && sh.heard[x.n]) continue;
-      const id = sh.key + x.n;
-      const li = el("li");
-      const row = el("div", "row" + (x.n === nextN ? " is-next" : "") + (sh.heard[x.n] ? " is-done" : ""));
-      const b = el("button", "rec");
-      b.type = "button"; b.id = "rec-" + id;
-      b.setAttribute("role", "checkbox");
-      b.setAttribute("aria-checked", sh.heard[x.n] ? "true" : "false");
-      b.setAttribute("aria-label", x.t + " を聴いた");
-      const disc = el("span", "disc"); disc.innerHTML = CHECK; b.append(disc);
-      b.addEventListener("click", () => toggle(x.n));
-      const det = el("details"); det.id = "memo-" + id;
-      if (openMemo.has(id)) det.open = true;
-      det.addEventListener("toggle", () => { det.open ? openMemo.add(id) : openMemo.delete(id); });
-      const sm = el("summary");
-      const sub = el("span", "sub");
-      sub.append(el("span", "y", String(x.y)), el("span", "y", `約${x.min}分`), el("span", "tag" + (x.mood === "手ごわい" ? " hard" : ""), x.mood));
-      if (x.g) sub.append(el("span", "", x.g));
-      if (x.o) sub.append(el("span", "", x.o));
-      if (x.s) sub.append(el("span", "nos", "配信なし・要確認"));
-      if (sh.heard[x.n]) sub.append(el("span", "w", fmt(sh.heard[x.n]) + " に聴いた"));
-      const first = el("span", "first", "まず聴く1曲："); first.append(el("b", "", x.first));
-      sm.append(el("span", "t", x.t), el("span", "a", x.a), sub, first, el("span", "more", "聴く前のメモ"));
-      det.append(sm);
-      const dl = el("dl", "notes");
-      for (const [k, v] of [["ひとことで", x.pre], ["配信について", x.s], ["背景と作られた経緯", x.bg], ["どう評価されているか", x.rep], ["聴きどころ", x.pts], ["聴き方のコツ", x.tips], ["聴いたあとに考えたいこと", x.after]]) {
-        if (!v) continue;
-        const dv = el("div"); const dd = el("dd");
-        if (Array.isArray(v)) { const u = el("ul", "pts"); for (const p of v) u.append(el("li", "", p)); dd.append(u); }
-        else dd.textContent = v;
-        dv.append(el("dt", "", k), dd); dl.append(dv);
-      }
-      det.append(dl);
-      row.append(b, det); li.append(row); ul.append(li);
-    }
-    if (!ul.children.length) ul.append(el("li", "empty", "この年代は全部聴きました。"));
-    sec.append(ul); root.append(sec);
-  }
+/* jacket tile */
+function hueFor(x) {
+  const d = Math.floor(x.y / 10) * 10;
+  const base = { 1950: 214, 1960: 32, 1970: 14, 1980: 300, 1990: 196, 2000: 252, 2010: 166, 2020: 340 }[d] ?? 210;
+  return base + ((x.n * 37) % 28) - 14 + (S.key === "hogaku" ? 8 : 0);
+}
+function poster(x, seen) {
+  const hu = hueFor(x);
+  const p = h("div", "poster" + (seen ? " seen" : ""));
+  p.style.background = `linear-gradient(150deg, hsl(${hu} 58% 50%), hsl(${hu + 26} 52% 26%))`;
+  const ch = (x.t.match(/[^\s（(「『・★"'.]/) || [""])[0];
+  p.append(h("div", "ch", ch), h("div", "yr", x.y), h("div", "lbl"));
+  p.setAttribute("aria-hidden", "true");
+  return p;
 }
 
-function renderGame() {
-  const sh = cur, st = stats(sh);
-  const r = rankOf(st.count), nr = nextRank(st.count);
-  const rk = $("rank"); rk.innerHTML = "";
-  const top = el("div", "rank-top");
-  const nm = el("div", "rank-name"); nm.append(el("small", "", `${sh.name}の称号`), document.createTextNode(r[1]));
-  top.append(nm, el("div", "rank-next", nr ? `次の「${nr[1]}」まであと${nr[0] - st.count}枚` : "100枚達成"));
-  rk.append(top);
-  const sx = $("stats"); sx.innerHTML = "";
-  for (const [v, l] of [[`${Math.floor(st.minutes / 60)}時間`, `${sh.name}を聴いた合計`], [`${st.week}枚`, "今週聴いた（両方）"], [`${st.streak}週`, "連続で聴いている週"]]) {
-    const d = el("div", "stat"); d.append(el("b", "", v), el("span", "", l)); sx.append(d);
-  }
-  const bd = $("badges"); bd.innerHTML = "";
-  const gotN = sh.ach.filter(a => achProgress(a, sh.heard).done).length;
-  bd.append(el("h2", "", `${sh.name}の実績 ${gotN}／${sh.ach.length}`), el("p", "sub2", "年代・ジャンル・つながりごとに全部聴くともらえる"));
-  const grid = el("div", "bgrid");
-  const sorted = [...sh.ach].sort((a, b) => { const pa = achProgress(a, sh.heard), pb = achProgress(b, sh.heard); return (pb.done - pa.done) || (pb.got / pb.need - pa.got / pa.need); });
-  for (const a of sorted) {
-    const pr = achProgress(a, sh.heard);
-    grid.append(el("span", "badge" + (pr.done ? " got" : "") + (newBadges.has(a.id) ? " new" : ""), pr.done ? `★ ${a.label}` : `${a.label} ${pr.got}/${pr.need}`));
-  }
-  bd.append(grid);
-  newBadges = new Set();
+/* storage: claude.ai db when available, otherwise this browser */
+let db = null; const writing = {};
+function setStatus(msg) { const s = $("status"); s.textContent = msg || ""; s.hidden = !msg; }
+const lsKey = s => `meiban100-${s.key}-v2`;
+function loadLocal(s) { try { const v = JSON.parse(ls.get(lsKey(s)) || "null"); if (v && typeof v === "object") return v; } catch (e) {} return {}; }
+function persist(n) {
+  if (mode === "local") { if (!ls.set(lsKey(S), JSON.stringify(W))) setStatus("このブラウザでは記録を保存できません（プライベートモードなど）。"); return; }
+  if (mode !== "db" || !S.col) return;
+  const id = "a" + n; const col = S.col; const body = W[n] ? { n: +n, title: A(n).t, artist: A(n).a, date: W[n].d, rating: W[n].r || 0 } : null;
+  const key = S.key + id;
+  writing[key] = (writing[key] || Promise.resolve()).then(() => (body ? col.doc(id).set(body) : col.doc(id).delete())).catch(() => setStatus("保存できませんでした。もう一度タップしてください。"));
 }
 
-// ---- 演出 ----
-let toastTimer = null;
-function toast(main, sub, big) {
-  const t = $("toast"); t.innerHTML = "";
-  t.append(el("span", "", main)); if (sub) t.append(el("small", "", sub));
-  t.className = big ? "show big" : "show";
-  clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.className = big ? "big" : ""; }, big ? 3800 : 2200);
+/* sound & haptics */
+let actx = null;
+function chime(kind) {
+  if (!sound) return;
+  try {
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    if (actx.state === "suspended") actx.resume();
+    const notes = kind === "big" ? [523.25, 659.25, 783.99, 1046.5, 1318.5] : kind === "tick" ? [1760] : kind === "rate" ? [880, 1174.66] : kind === "flip" ? [587.33, 880] : [659.25, 987.77];
+    const gap = kind === "big" ? .085 : .06, vol = kind === "tick" ? .04 : .11;
+    notes.forEach((fq, i) => {
+      const o = actx.createOscillator(), g = actx.createGain(); const t = actx.currentTime + i * gap;
+      o.type = "triangle"; o.frequency.value = fq; g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + .01); g.gain.exponentialRampToValueAtTime(.001, t + (kind === "tick" ? .06 : .4));
+      o.connect(g).connect(actx.destination); o.start(t); o.stop(t + .45);
+    });
+  } catch (e) {}
 }
+function buzz(p) { try { navigator.vibrate && navigator.vibrate(p); } catch (e) {} }
+function renderSound() { const b = $("soundBtn"); b.innerHTML = sound ? ICON.soundOn : ICON.soundOff; b.setAttribute("aria-pressed", sound ? "true" : "false"); b.setAttribute("aria-label", sound ? "効果音オン" : "効果音オフ"); }
+$("soundBtn").addEventListener("click", () => { sound = !sound; ls.set("meiban100-sound", sound ? "1" : "0"); renderSound(); chime("rate"); });
+
+/* confetti */
+const reduced = (() => { try { return matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e) { return false; } })();
 function burst(x, y, big) {
-  try { if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return; } catch (e) {}
+  if (reduced) return;
   const cv = $("fx"); const ctx = cv.getContext("2d"); const dpr = window.devicePixelRatio || 1;
   cv.width = innerWidth * dpr; cv.height = innerHeight * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  const cols = [getComputedStyle(document.documentElement).getPropertyValue("--accent").trim() || "#27467a", "#e0b55a", "#2f7a54", "#d8573b", "#e86fa0"];
-  const N = big ? 140 : 28; const parts = [];
+  const cols = ["#e9b94f", "#ffd98a", "#4f86e8", "#62c895", "#8fb4ff", "#f39ac0", "#ffffff"];
+  const N = big ? 180 : 36; const ps = [];
   for (let i = 0; i < N; i++) {
-    const a = big ? Math.random() * Math.PI * 2 : -Math.PI / 2 + (Math.random() - .5) * 2.2;
-    const sp = (big ? 6 : 4) + Math.random() * (big ? 8 : 4);
-    parts.push({ x: big ? innerWidth / 2 : x, y: big ? innerHeight / 3 : y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, r: 3 + Math.random() * 4, c: cols[i % cols.length], rot: Math.random() * 6, life: 0 });
+    const fromSide = big && i % 2;
+    const a = big ? (fromSide ? -Math.PI / 3 - Math.random() * .6 : -Math.PI * 2 / 3 + Math.random() * .6) : -Math.PI / 2 + (Math.random() - .5) * 2.4;
+    const sp = big ? 9 + Math.random() * 9 : 3 + Math.random() * 5;
+    const x0 = big ? (fromSide ? -10 : innerWidth + 10) : x, y0 = big ? innerHeight * .75 : y;
+    ps.push({ x: x0, y: y0, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, w: 5 + Math.random() * 6, c: cols[i % cols.length], rot: Math.random() * 6, vr: (Math.random() - .5) * .5, t: 0, wob: Math.random() * 6 });
   }
-  const T = big ? 110 : 55;
+  const T = big ? 160 : 60;
   (function step() {
-    ctx.clearRect(0, 0, innerWidth, innerHeight);
-    let alive = false;
-    for (const p of parts) {
-      p.life++; if (p.life > T) continue; alive = true;
-      p.vy += .25; p.vx *= .99; p.x += p.vx; p.y += p.vy; p.rot += .2;
-      ctx.globalAlpha = 1 - p.life / T; ctx.fillStyle = p.c;
-      ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.beginPath(); ctx.arc(0, 0, p.r, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+    ctx.clearRect(0, 0, innerWidth, innerHeight); let alive = false;
+    for (const p of ps) {
+      if (++p.t > T) continue; alive = true;
+      p.vy += big ? .2 : .22; p.vx *= .985; p.x += p.vx + Math.sin((p.t + p.wob) / 6) * (big ? .8 : 0); p.y += p.vy; p.rot += p.vr;
+      ctx.globalAlpha = Math.max(0, 1 - p.t / T); ctx.fillStyle = p.c;
+      ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.scale(1, Math.cos(p.t / 5 + p.wob)); ctx.fillRect(-p.w / 2, -p.w / 4, p.w, p.w / 2); ctx.restore();
     }
     if (alive) requestAnimationFrame(step); else ctx.clearRect(0, 0, innerWidth, innerHeight);
   })();
 }
-function celebrate(sh, n, before) {
-  const after = snapshot(sh);
-  const gained = [...after.ach].filter(id => !before.ach.has(id));
-  newBadges = new Set(gained);
-  const b = $("rec-" + sh.key + n);
-  const rc = b ? b.getBoundingClientRect() : { left: innerWidth / 2, top: innerHeight / 2, width: 0, height: 0 };
-  try { navigator.vibrate && navigator.vibrate(gained.length || after.rank !== before.rank ? [30, 40, 60] : 25); } catch (e) {}
-  if (after.count === 100) { burst(0, 0, true); toast(`${sh.name}100枚 聴き切った！`, "名盤マスター", true); }
-  else if (after.rank !== before.rank) { burst(0, 0, true); toast(`${sh.name}の称号アップ：${after.rank}`, `${after.count}枚目は『${sh.by[n].t}』`, true); }
-  else if (gained.length) { burst(0, 0, true); toast(`実績：${sh.ach.find(a => a.id === gained[0]).label}`, gained.length > 1 ? `ほか${gained.length - 1}つ` : `${sh.name} ${after.count}枚目`, true); }
-  else if (after.count % 10 === 0) { burst(0, 0, true); toast(`${sh.name} ${after.count}枚！`, "", true); }
-  else { burst(rc.left + rc.width / 2, rc.top + rc.height / 2, false); toast(`${sh.name} ${after.count}枚目　${PRAISE[after.count % PRAISE.length]}`, `あと${100 - after.count}枚`); }
-  renderGame();
+
+/* count-up */
+function countTo(el, to) {
+  const from = +(el.dataset.v || 0); el.dataset.v = to;
+  if (reduced || from === to) { el.textContent = to; return; }
+  if (to > from) { el.classList.remove("bump"); void el.offsetWidth; el.classList.add("bump"); }
+  const t0 = performance.now(), dur = 700;
+  (function f(t) { const k = Math.min(1, (t - t0) / dur); const e = 1 - Math.pow(1 - k, 3); el.textContent = Math.round(from + (to - from) * e); if (k < 1) requestAnimationFrame(f); })(t0);
 }
 
-// ---- 操作 ----
-function toggle(n) {
-  const sh = cur;
-  if (sh.heard[n]) { delete sh.heard[n]; save(sh); render(); return; }
-  const before = snapshot(sh);
-  sh.heard[n] = today(); save(sh); render(); celebrate(sh, n, before);
+/* toast & modal */
+let toastTimer = null;
+function toast(main, sub, rateFor) {
+  const t = $("toast"); t.innerHTML = "";
+  t.append(h("b", "", main)); if (sub) t.append(h("small", "", sub));
+  if (rateFor) t.append(starRow(rateFor, true));
+  t.classList.remove("show"); void t.offsetWidth; t.classList.add("show");
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove("show"), rateFor ? 5500 : 2400);
 }
-function switchTab(key, scroll) {
-  if (!SHELVES[key] || cur.key === key) return;
-  cur = SHELVES[key];
-  try { localStorage.setItem("meiban100-tab", key); } catch (e) {}
-  try { history.replaceState(null, "", "#" + key); } catch (e) {}
-  render();
-  if (scroll) window.scrollTo({ top: 0 });
+function closeModal() { const m = $("modal"); m.classList.remove("show"); setTimeout(() => { if (!m.classList.contains("show")) { m.hidden = true; m.innerHTML = ""; } }, 280); }
+$("modal").addEventListener("click", e => { if (e.target === $("modal")) closeModal(); });
+function modal(kick, title, sub) {
+  const m = $("modal"); m.innerHTML = ""; m.hidden = false;
+  const c = h("div", "mcard");
+  const md2 = h("div", "medal"); md2.innerHTML = ICON.medal;
+  const ok = h("button", "btn gold wide", "やった"); ok.type = "button";
+  c.append(h("div", "kick", kick), md2, h("h3", "", title)); if (sub) c.append(h("p", "", sub)); c.append(ok);
+  m.append(c);
+  requestAnimationFrame(() => m.classList.add("show"));
+  ok.addEventListener("click", closeModal);
+  setTimeout(() => ok.focus({ preventScroll: true }), 60);
 }
-for (const k of Object.keys(SHELVES)) $("tab-" + k).addEventListener("click", () => switchTab(k, false));
-window.addEventListener("hashchange", () => switchTab(location.hash.slice(1), true));
 
-$("gacha").addEventListener("click", () => {
-  const sh = cur;
-  // いま進めている年代の中から、配信で聴けるものを優先して引く
-  const g = sh.groups.find(g => g.items.some(x => !sh.heard[x.n]));
-  if (!g) return;
-  let pool = g.items.filter(x => !sh.heard[x.n] && !x.s);
-  if (!pool.length) pool = g.items.filter(x => !sh.heard[x.n]);
-  sh.gachaPick = pool[Math.floor(Math.random() * pool.length)].n;
-  render();
-  const x = sh.by[sh.gachaPick];
-  toast(`今日の1枚：${x.t}`, `${x.a}・まず「${x.first}」`);
-  const id = sh.key + sh.gachaPick;
-  const det = $("memo-" + id);
-  if (det) { det.open = true; openMemo.add(id); det.closest("li").scrollIntoView({ behavior: "smooth", block: "center" }); }
+/* stars */
+function starRow(n, inToast) {
+  const r = h("div", "rate"); r.setAttribute("role", "group"); r.setAttribute("aria-label", "星をつける");
+  const cur = (W[n] && W[n].r) || 0;
+  for (let i = 1; i <= 5; i++) {
+    const s = h("button", "star" + (i <= cur ? " on" : ""), "★"); s.type = "button"; s.setAttribute("aria-label", `星${i}つ`);
+    s.addEventListener("click", ev => {
+      ev.stopPropagation();
+      [...r.children].forEach((x, j) => { x.classList.toggle("on", j < i); x.classList.remove("pulse"); if (j < i) { x.style.animationDelay = `${j * 50}ms`; void x.offsetWidth; x.classList.add("pulse"); } });
+      setTimeout(() => rate(n, i), 260);
+      if (inToast) setTimeout(() => $("toast").classList.remove("show"), 700);
+    });
+    r.append(s);
+  }
+  return r;
+}
+function rate(n, v) {
+  if (!W[n]) return;
+  const before = snapshot();
+  W[n] = { ...W[n], r: v }; persist(n); chime("rate"); buzz(12);
+  if (v === 5) { fresh = n; }
+  const after = snapshot(); const gained = [...after.ach].filter(id => !before.ach.has(id));
+  renderAll(); if (sheetN === n) renderSheet(n, true);
+  if (v === 5) toast("星5つ。金のレコードになった", A(n).t);
+  if (gained.length) setTimeout(() => { burst(0, 0, true); chime("big"); const a = S.ach.find(x => x.id === gained[0]); modal("実績解除", a.label, a.desc); }, 300);
+}
+
+/* listen / unlisten */
+function setHeard(n, on, originEl) {
+  if (on === !!W[n]) return;
+  if (!on) { delete W[n]; persist(n); renderAll(); if (sheetN === n) renderSheet(n, true); toast("取り消しました", A(n).t); return; }
+  const before = snapshot();
+  W[n] = { d: today(), r: 0 }; persist(n); fresh = n;
+  if (S.gachaPick === n) S.gachaPick = null;
+  const rc = originEl ? originEl.getBoundingClientRect() : null;
+  renderAll(); if (sheetN === n) renderSheet(n, true);
+  const after = snapshot(); const gained = [...after.ach].filter(id => !before.ach.has(id));
+  const big = after.count === 100 || after.rank !== before.rank || gained.length || after.count % 10 === 0;
+  buzz(big ? [30, 50, 90] : 22);
+  if (big) {
+    chime("big"); burst(0, 0, true);
+    if (after.count === 100) modal("COMPLETE", `${S.name}100枚 聴き切った`, "名盤マスター。おめでとう");
+    else if (after.rank !== before.rank) modal(`${S.name}の称号アップ`, after.rank, `${after.count}枚目は『${A(n).t}』`);
+    else if (gained.length) { const a = S.ach.find(x => x.id === gained[0]); modal("実績解除", a.label, gained.length > 1 ? `${a.desc}（ほか${gained.length - 1}つ）` : a.desc); }
+    else modal("節目", `${S.name} ${after.count}枚`, `残り${100 - after.count}枚`);
+    setTimeout(() => toast(`${after.count}枚目　星をつける？`, A(n).t, n), 1100);
+  } else {
+    chime("check"); burst(rc ? rc.left + rc.width / 2 : innerWidth / 2, rc ? rc.top + rc.height / 2 : innerHeight / 2, false);
+    const praise = ["ナイス", "また1枚", "いい音だった？", "積み上がってる", "その調子", "名盤を1枚ストック"][after.count % 6];
+    toast(`${S.name} ${after.count}枚目　${praise}`, "星をつけておく？", n);
+  }
+}
+
+/* 洋楽／邦楽の切り替え */
+function renderShelfSwitch() {
+  for (const box of document.querySelectorAll("[data-shelf]")) {
+    box.innerHTML = ""; box.dataset.k = S.key;
+    box.append(h("i"));
+    for (const s of Object.values(SHELVES)) {
+      const b = h("button", "", s.name); b.type = "button"; b.setAttribute("role", "tab");
+      b.setAttribute("aria-selected", s === S ? "true" : "false");
+      b.append(h("small", "", Object.keys(s.W).length));
+      b.addEventListener("click", () => switchShelf(s.key));
+      box.append(b);
+    }
+  }
+}
+function switchShelf(key) {
+  if (!SHELVES[key] || S.key === key) return;
+  S = SHELVES[key]; W = S.W; filter = "all"; listAnim = true;
+  ls.set("meiban100-shelf", key);
+  for (const el of [$("cnt")]) el.dataset.v = Object.keys(W).length;
+  chime("flip"); buzz(10);
+  renderAll();
+}
+
+/* views */
+const TABS = [["home", "ホーム", "home"], ["list", "リスト", "list"], ["tickets", "レコード棚", "record"], ["awards", "実績", "trophy"]];
+function current() { const v = (location.hash || "#home").slice(1); return TABS.some(t => t[0] === v) ? v : "home"; }
+function route() {
+  const cur = current();
+  for (const [k] of TABS) $("v-" + k).hidden = k !== cur;
+  for (const b of $("tabs").children) b.setAttribute("aria-current", b.dataset.k === cur ? "page" : "false");
+}
+function go(k) { if (k === "list") { listAnim = true; renderList(); } if (current() === k) { window.scrollTo({ top: 0, behavior: "smooth" }); return; } location.hash = k; route(); window.scrollTo({ top: 0 }); }
+let lastDot = 0;
+function renderTabs() {
+  const n = $("tabs"); n.innerHTML = "";
+  const c = Object.keys(W).length;
+  for (const [k, label, ic] of TABS) {
+    const b = h("button", "tab"); b.type = "button"; b.dataset.k = k; b.innerHTML = ICON[ic]; b.append(h("span", "", label));
+    if (k === "tickets" && c) { const d = h("span", "dot" + (c > lastDot ? " bump" : ""), c); b.append(d); }
+    b.addEventListener("click", () => go(k));
+    n.append(b);
+  }
+  lastDot = c;
+  route();
+}
+function renderHome() {
+  const st = stats(); const r = rankOf(st.count), nr = nextRank(st.count);
+  countTo($("cnt"), st.count);
+  $("ringFill").style.strokeDashoffset = (326.73 * (1 - st.count / 100)).toFixed(2);
+  $("rlabel").textContent = `${S.name}の称号`;
+  $("rname").textContent = r[1];
+  $("rbar").style.width = nr ? `${((st.count - r[0]) / (nr[0] - r[0])) * 100}%` : "100%";
+  $("rnext").textContent = nr ? `次の「${nr[1]}」まであと${nr[0] - st.count}枚` : "すべての称号を手に入れた";
+  const sx = $("stats"); sx.innerHTML = "";
+  [[Math.floor(st.minutes / 60), "時間", `${S.name}を聴いた時間`], [st.week, "枚", "今週（洋楽＋邦楽）"], [st.streak, "週", "連続"]].forEach(([v, u, l], i) => {
+    const d = h("div", "stat" + (i === 2 && st.streak >= 2 ? " hot" : ""));
+    const b = h("b"); if (i === 2 && st.streak >= 1) b.innerHTML = ICON.flame; b.append(document.createTextNode(v + u));
+    d.append(b, h("span", "", l)); sx.append(d);
+  });
+  const nc = $("nextcard"); nc.innerHTML = "";
+  const nk = nextAlbum();
+  if (!nk) nc.append(h("div", "pre", `${S.name}100枚ぜんぶ聴きました。`));
+  else {
+    const x = A(nk);
+    const top = h("div", "nc-top"); const pz = poster(x, false); pz.style.fontSize = "20px";
+    const tx = h("div"); tx.append(h("div", "label" + (S.gachaPick === nk ? " gacha" : ""), S.gachaPick === nk ? `今日の1枚（${S.name}ガチャ）` : `次に聴く1枚（${S.name}）`), h("h3", "", x.t), h("div", "meta", `${x.y}年・${x.a}・約${x.min}分`));
+    top.append(pz, tx); nc.append(top);
+    nc.append(h("div", "pre", x.pre));
+    const fi = h("div", "first", "まず聴く1曲："); fi.append(h("b", "", x.first)); nc.append(fi);
+    if (x.s) nc.append(h("div", "first", "⚠ " + x.s));
+    const acts = h("div", "acts");
+    const a1 = h("button", "btn", "聴く前のメモ"); a1.type = "button"; a1.addEventListener("click", () => openSheet(nk));
+    const a2 = h("button", "btn primary", "聴いた！"); a2.type = "button"; a2.addEventListener("click", () => setHeard(nk, true, a2));
+    acts.append(a1, a2); nc.append(acts);
+  }
+  const ks = byDateAsc().reverse();
+  $("recentHead").hidden = !ks.length; $("recentCount").textContent = ks.length ? `${ks.length}枚` : "";
+  const rc = $("recent"); rc.innerHTML = ""; const no = shelfNo();
+  ks.slice(0, 8).forEach(k => rc.append(ticket(k, no[k])));
+}
+function renderList() {
+  const seg = $("seg"); seg.innerHTML = "";
+  const opts = [["all", "すべて", S.order.length]].concat(S.groups.map(g => [g.key, g.name, g.items.length]));
+  for (const [k, label, n] of opts) {
+    const b = h("button", "", label); b.type = "button"; b.setAttribute("aria-pressed", filter === k ? "true" : "false");
+    const seen = k === "all" ? Object.keys(W).length : S.groups.find(g => g.key === k).items.filter(x => W[x.n]).length;
+    b.append(h("small", "", `${seen}/${n}`));
+    b.addEventListener("click", () => { filter = k; listAnim = true; renderList(); });
+    seg.append(b);
+  }
+  $("hideSwitch").setAttribute("aria-pressed", hideDone ? "true" : "false");
+  const root = $("lists"); root.innerHTML = ""; root.classList.toggle("anim", listAnim); listAnim = false;
+  const nk = nextAlbum(); let shown = 0;
+  for (const g of S.groups) {
+    if (filter !== "all" && filter !== g.key) continue;
+    const seen = g.items.filter(x => W[x.n]).length;
+    const wrap = h("div"); wrap.style.display = "grid"; wrap.style.gap = "8px";
+    const gh = h("div", "grouphead"); const h3 = h("h3", "", g.name); h3.append(h("span", "", g.note));
+    gh.append(h3, h("small", "", `${seen}／${g.items.length}`));
+    const gb = h("div", "gbar"); const gi = h("i"); gi.style.width = `${(seen / g.items.length) * 100}%`; gb.append(gi);
+    const ul = h("ul", "list"); let i = 0;
+    for (const x of g.items) {
+      const done = !!W[x.n];
+      if (hideDone && done) continue;
+      shown++;
+      const li = h("li", "item" + (done ? " is-done" : "") + (x.n === nk ? " is-next" : ""));
+      li.style.setProperty("--i", Math.min(i++, 14));
+      const op = h("button", "open"); op.type = "button"; op.setAttribute("aria-label", `${x.t}の聴く前のメモを開く`);
+      const tx = h("div", "it-txt"); tx.append(h("div", "it-t", x.t), h("div", "it-a", x.a));
+      const sub = h("div", "it-sub");
+      if (x.n === nk) sub.append(h("span", "tag next", S.gachaPick === x.n ? "今日の1枚" : "次はこれ"));
+      sub.append(h("span", "mono", x.y), h("span", "mono", `${x.min}分`));
+      sub.append(h("span", "tag" + (x.mood === "手ごわい" ? " heavy" : x.mood === "聴きやすい" ? " light" : ""), x.mood));
+      if (x.s) sub.append(h("span", "tag heavy", "配信なし"));
+      if (done) { sub.append(h("span", "", `${md(W[x.n].d)}に聴いた`)); if (W[x.n].r) sub.append(h("span", "stars-mini", "★".repeat(W[x.n].r))); }
+      tx.append(sub);
+      op.append(poster(x, done), tx);
+      op.addEventListener("click", () => openSheet(x.n));
+      const ck = h("button", "chk" + (fresh === x.n && done ? " pop" : "")); ck.type = "button"; ck.innerHTML = ICON.check; ck.id = "chk-" + S.key + x.n;
+      ck.setAttribute("role", "checkbox"); ck.setAttribute("aria-checked", done ? "true" : "false"); ck.setAttribute("aria-label", `${x.t}を聴いた`);
+      ck.addEventListener("click", () => setHeard(x.n, !W[x.n], ck));
+      li.append(op, ck); ul.append(li);
+    }
+    if (!ul.children.length) ul.append(h("li", "tnote", "この年代は全部聴きました。"));
+    wrap.append(gh, gb, ul); root.append(wrap);
+  }
+  $("listCount").textContent = `${shown}枚を表示`;
+}
+function ticket(k, no) {
+  const x = A(k); const w = W[k];
+  const t = h("button", "ticket" + (w.r === 5 ? " gold" : "") + (fresh === k ? " fresh" : "")); t.type = "button";
+  t.setAttribute("aria-label", `${x.t}のレコード`);
+  const top = h("div", "no"); top.append(h("span", "", `No.${String(no || 0).padStart(3, "0")}`), h("span", "", `#${k}`));
+  const td = h("div", "td"); td.append(h("span", "", w.d ? w.d.replace(/-/g, ".") : ""), h("span", "st", w.r ? "★".repeat(w.r) : ""));
+  t.append(top, h("div", "tt", x.t), h("div", "ta", x.a), td);
+  t.addEventListener("click", () => openSheet(k));
+  return t;
+}
+function renderTickets() {
+  const ks = byDateAsc().reverse(); const no = shelfNo();
+  const rated = ks.filter(k => W[k].r);
+  const avg = rated.length ? (rated.reduce((a, k) => a + W[k].r, 0) / rated.length).toFixed(1) : null;
+  $("ticketNote").textContent = ks.length ? `${S.name} ${ks.length}／100枚。星5つをつけると金のレコードになる。${avg ? `平均 ★${avg}` : ""}` : `聴いたアルバムがここの棚に並ぶ。最初の1枚はホームの「聴いた！」から。`;
+  const g = $("tgrid"); g.innerHTML = "";
+  ks.forEach(k => g.append(ticket(k, no[k])));
+  for (let i = 0; i < Math.min(4, 100 - ks.length); i++) g.append(h("div", "ticket empty", `No.${String(ks.length + i + 1).padStart(3, "0")}`));
+  $("copyBtn").hidden = mode !== "local";
+}
+function renderAwards() {
+  const c = Object.keys(W).length; const cur = rankOf(c);
+  const ld = $("ladder"); ld.innerHTML = "";
+  RANKS.forEach(([n, name]) => { const r = h("div", "rl" + (name === cur[1] ? " cur" : c >= n ? " past" : "")); r.append(h("b", "", name), h("span", "", `${n}枚`)); ld.append(r); });
+  $("ladderNote").textContent = `${S.name}は いま ${cur[1]}`;
+  const list = S.ach.map(a => ({ a, p: achProg(a, W) })).sort((x, y) => (y.p.done - x.p.done) || (y.p.got / y.p.need - x.p.got / x.p.need));
+  $("awardCount").textContent = `${S.name} ${list.filter(x => x.p.done).length}／${S.ach.length}`;
+  const box = $("awards"); box.innerHTML = "";
+  for (const { a, p } of list) {
+    const r = h("div", "aw" + (p.done ? " got" : ""));
+    const m = h("div", "medal"); m.innerHTML = ICON.medal;
+    const bar = h("div", "abar"); const bi = h("i"); bi.style.width = `${(p.got / p.need) * 100}%`; bar.append(bi);
+    r.append(m, h("div", "an", a.label), h("div", "ap", p.done ? "達成" : `${p.got}/${p.need}`), h("div", "ad", a.desc), bar);
+    box.append(r);
+  }
+}
+function renderAll() { renderShelfSwitch(); renderHome(); renderList(); renderTickets(); renderAwards(); renderTabs(); setTimeout(() => { fresh = null; }, 900); }
+
+/* sheet */
+let sheetN = null; let lastFocus = null;
+function renderSheet(n, keepScroll) {
+  const x = A(n); const w = W[n];
+  const body = $("sheet").querySelector(".body"); const st = body.scrollTop;
+  const b = $("shBody"); b.innerHTML = "";
+  const head = h("div", "sh-head"); const tx = h("div");
+  const t = h("h3", "", x.t); t.id = "shTitle"; tx.append(t);
+  if (x.o) tx.append(h("div", "orig", x.o));
+  tx.append(h("div", "art", x.a));
+  head.append(poster(x, !!w), tx); b.append(head);
+  const chips = h("div", "chips");
+  [`${x.y}年`, `約${x.min}分`, x.mood, x.g].filter(Boolean).forEach(c => chips.append(h("span", "chip", c)));
+  chips.append(h("span", "chip svc", `まず「${x.first}」`));
+  if (x.s) chips.append(h("span", "chip warn", "配信なし・要確認"));
+  b.append(chips);
+  const notes = h("div", "notes");
+  const sec = (title, node) => { const d = h("div"); d.append(h("div", "nt", title), node); notes.append(d); };
+  sec("ひとことで", h("p", "", x.pre));
+  if (x.s) sec("配信について", h("p", "", x.s));
+  sec("背景と作られた経緯", h("p", "", x.bg));
+  sec("どう評価されているか", h("p", "", x.rep));
+  const ul = h("ul"); x.pts.forEach(p => ul.append(h("li", "", p))); sec("聴きどころ", ul);
+  sec("聴き方のコツ", h("p", "", x.tips));
+  sec("聴いたあとに考えたいこと", h("p", "q", x.after));
+  b.append(notes);
+  if (keepScroll) body.scrollTop = st;
+  const ft = $("shFoot"); ft.innerHTML = "";
+  if (w) {
+    const row = h("div", "row");
+    const left = h("div"); left.append(h("div", "seenline", `${md(w.d)}に聴いた`), starRow(n, false));
+    const undo = h("button", "btn ghost", "取り消す"); undo.type = "button"; undo.addEventListener("click", () => setHeard(n, false));
+    row.append(left, undo); ft.append(row);
+  } else {
+    const gob = h("button", "btn primary wide", "聴いた！"); gob.type = "button"; gob.addEventListener("click", () => setHeard(n, true, gob)); ft.append(gob);
+  }
+}
+function openSheet(n) {
+  sheetN = n; lastFocus = document.activeElement; renderSheet(n);
+  const s = $("sheet"), bd = $("backdrop"); s.hidden = false; bd.hidden = false;
+  s.querySelector(".body").scrollTop = 0;
+  requestAnimationFrame(() => requestAnimationFrame(() => { s.classList.add("show"); bd.classList.add("show"); }));
+  document.body.style.overflow = "hidden";
+  setTimeout(() => { const t = $("shTitle"); if (t) { t.tabIndex = -1; t.focus({ preventScroll: true }); } }, 60);
+}
+function closeSheet() {
+  if (sheetN == null) return; sheetN = null;
+  const s = $("sheet"), bd = $("backdrop"); s.classList.remove("show"); bd.classList.remove("show");
+  document.body.style.overflow = "";
+  setTimeout(() => { if (sheetN == null) { s.hidden = true; bd.hidden = true; } }, 380);
+  if (lastFocus && lastFocus.focus) lastFocus.focus({ preventScroll: true });
+}
+$("backdrop").addEventListener("click", closeSheet);
+document.addEventListener("keydown", e => { if (e.key === "Escape") { if (!$("modal").hidden) closeModal(); else closeSheet(); } });
+(() => {
+  const s = $("sheet"); let y0 = null, dy = 0;
+  s.addEventListener("touchstart", e => { y0 = s.querySelector(".body").scrollTop <= 0 ? e.touches[0].clientY : null; dy = 0; }, { passive: true });
+  s.addEventListener("touchmove", e => { if (y0 == null) return; dy = Math.max(0, e.touches[0].clientY - y0); if (dy > 0) { s.style.transition = "none"; s.style.transform = `translateY(${dy}px)`; } }, { passive: true });
+  s.addEventListener("touchend", () => { s.style.transition = ""; s.style.transform = ""; if (y0 != null && dy > 110) closeSheet(); y0 = null; dy = 0; }, { passive: true });
+})();
+
+/* gacha: いま進めている年代から、配信で聴けるものを引く */
+$("gachaBtn").addEventListener("click", () => {
+  const g = S.groups.find(g => g.items.some(x => !W[x.n])); if (!g) return;
+  let pool = g.items.filter(x => !W[x.n] && !x.s).map(x => x.n);
+  if (!pool.length) pool = g.items.filter(x => !W[x.n]).map(x => x.n);
+  const m = $("modal"); m.innerHTML = ""; m.hidden = false;
+  const box = h("div", "slot"); const reel = h("div", "reel");
+  const acts = h("div", "acts"); const again = h("button", "btn", "もう一回"); again.type = "button"; const take = h("button", "btn gold", "これにする"); take.type = "button";
+  acts.append(again, take);
+  box.append(h("div", "kick", `${S.name}・${g.name}から1枚`), reel, acts); m.append(box);
+  requestAnimationFrame(() => m.classList.add("show"));
+  let pick = null, spinning = false;
+  const show = k => { const x = A(k); reel.innerHTML = ""; const tx = h("div"); tx.append(h("h3", "", x.t), h("p", "", `${x.a}・${x.y}年・約${x.min}分`)); reel.append(poster(x, false), tx); };
+  const spin = () => {
+    if (spinning) return; spinning = true;
+    acts.style.opacity = ".35"; acts.style.pointerEvents = "none"; reel.classList.remove("landed");
+    pick = pool[Math.floor(Math.random() * pool.length)];
+    let i = 0; const steps = reduced ? 1 : 18;
+    const tick = () => {
+      i++;
+      if (i < steps) { reel.classList.remove("spin"); void reel.offsetWidth; reel.classList.add("spin"); show(pool[Math.floor(Math.random() * pool.length)]); chime("tick"); buzz(4); setTimeout(tick, 40 + i * i * 1.5); }
+      else { show(pick); reel.classList.remove("spin"); void reel.offsetWidth; reel.classList.add("landed"); chime("big"); buzz([20, 30, 50]); acts.style.opacity = "1"; acts.style.pointerEvents = "auto"; const r = reel.getBoundingClientRect(); burst(r.left + r.width / 2, r.top + r.height / 2, false); spinning = false; }
+    };
+    tick();
+  };
+  again.addEventListener("click", spin);
+  take.addEventListener("click", () => { S.gachaPick = pick; closeModal(); go("home"); renderAll(); window.scrollTo({ top: 0, behavior: "smooth" }); toast(`今日の1枚：${A(pick).t}`, `まず「${A(pick).first}」から`); });
+  spin();
 });
 
-$("hideDone").setAttribute("aria-pressed", hideDone ? "true" : "false");
-$("hideDone").addEventListener("click", () => {
-  hideDone = !hideDone;
-  $("hideDone").setAttribute("aria-pressed", hideDone ? "true" : "false");
-  try { localStorage.setItem("meiban100-hide", hideDone ? "1" : "0"); } catch (e) {}
-  render();
-});
+$("hideSwitch").addEventListener("click", () => { hideDone = !hideDone; ls.set("meiban100-hide", hideDone ? "1" : "0"); listAnim = true; renderList(); });
 
+/* copy record (this-browser mode): 洋楽と邦楽をまとめて */
 function recordText() {
-  const out = [];
-  for (const sh of Object.values(SHELVES)) {
-    const ks = sh.order.filter(k => sh.heard[k]).sort((a, b) => (sh.heard[a] < sh.heard[b] ? -1 : sh.heard[a] > sh.heard[b] ? 1 : 0));
-    out.push(ks.length ? `名盤100枚・${sh.name}の記録（${ks.length}枚）\n` + ks.map(k => `${sh.heard[k]} #${k} ${sh.by[k].t}／${sh.by[k].a}`).join("\n") : `名盤100枚・${sh.name}：まだ0枚`);
-  }
-  return out.join("\n\n");
+  return Object.values(SHELVES).map(s => {
+    const ks = s.order.filter(k => s.W[k]).sort((a, b) => (s.W[a].d || "").localeCompare(s.W[b].d || "") || a - b);
+    if (!ks.length) return `名盤100枚・${s.name}：まだ0枚`;
+    return `名盤100枚・${s.name}の記録（${ks.length}枚）\n` + ks.map(k => `${s.W[k].d} #${k} ${s.by[k].t}／${s.by[k].a}${s.W[k].r ? " ★" + s.W[k].r : ""}`).join("\n");
+  }).join("\n\n");
 }
-$("copyRec").addEventListener("click", async () => {
+$("copyBtn").addEventListener("click", async () => {
   const txt = recordText();
-  try { await navigator.clipboard.writeText(txt); setStatus("記録をコピーしました。クロコとの会話に貼ってください。"); }
-  catch (e) {
-    const ta = $("recBox"); ta.hidden = false; ta.value = txt; ta.focus(); ta.select();
-    setStatus("下の枠の文字を長押しでコピーしてください。");
-  }
+  try { await navigator.clipboard.writeText(txt); toast("記録をコピーしました", "洋楽と邦楽の両方。クロコとの会話に貼ってください"); }
+  catch (e) { const ta = $("recBox"); ta.hidden = false; ta.value = txt; ta.focus(); ta.select(); toast("下の枠を長押しでコピー"); }
 });
 
-for (const sh of Object.values(SHELVES)) sh.heard = load(sh);
-render();
+/* boot */
+window.addEventListener("hashchange", route);
+renderSound();
+renderAll();
+(async () => {
+  try { db = window.claude && window.claude.use ? await window.claude.use("db") : null; } catch (e) { db = null; }
+  if (!db) { mode = "local"; for (const s of Object.values(SHELVES)) s.W = loadLocal(s); W = S.W; renderAll(); if (window.claude) setStatus("記録はこのブラウザの中に保存しています。"); return; }
+  mode = "db";
+  setStatus("記録を読み込んでいます…");
+  const timer = setTimeout(() => setStatus("記録にまだつながっていません。電波のよい所で開き直してください。"), 10000);
+  for (const s of Object.values(SHELVES)) {
+    s.col = db.collection(s.key);
+    s.col.onSnapshot(snap => {
+      const next = {};
+      for (const d of snap.docs) { const v = d.data(); if (v && v.n) next[v.n] = { d: v.date || "", r: v.rating || 0 }; }
+      s.W = next; if (s === S) W = s.W;
+      if (!snap.metadata || !snap.metadata.fromCache) { clearTimeout(timer); setStatus(""); }
+      renderAll(); if (sheetN != null) renderSheet(sheetN, true);
+    }, () => { clearTimeout(timer); setStatus("記録を読めませんでした。"); });
+  }
+})();
 </script>
+
 </body>
 </html>
