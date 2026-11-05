@@ -266,7 +266,7 @@ h2.sec small { font-family: var(--f-mono); font-size: .8rem; color: var(--muted)
 .toast .rate .star.on { color: #d79a1d; }
 .modal { position: fixed; inset: 0; z-index: 65; display: grid; place-items: center; padding: 24px; background: rgba(8, 6, 12, .72); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); opacity: 0; pointer-events: none; transition: opacity .25s; }
 .modal.show { opacity: 1; pointer-events: auto; }
-.mcard { position: relative; overflow: hidden; width: min(88vw, 360px); border-radius: 24px; padding: 26px 22px 20px; text-align: center; display: grid; gap: 10px; justify-items: center; background: radial-gradient(120% 80% at 50% 0%, #4a3410, var(--surface) 65%); border: 1px solid rgba(233, 185, 79, .5); box-shadow: 0 0 60px rgba(233, 185, 79, .25), var(--shadow); transform: scale(.7) translateY(20px); transition: transform .5s var(--spring); }
+.mcard { position: relative; box-sizing: border-box; overflow: hidden; width: min(88vw, 360px); border-radius: 24px; padding: 26px 22px 20px; text-align: center; display: grid; gap: 10px; justify-items: center; background: radial-gradient(120% 80% at 50% 0%, #4a3410, var(--surface) 65%); border: 1px solid rgba(233, 185, 79, .5); box-shadow: 0 0 60px rgba(233, 185, 79, .25), var(--shadow); transform: scale(.7) translateY(20px); transition: transform .5s var(--spring); }
 .mcard::before { content: ""; position: absolute; inset: -50%; background: conic-gradient(from 0deg, transparent 0 10%, rgba(233, 185, 79, .14) 12% 16%, transparent 18% 35%, rgba(233, 185, 79, .14) 37% 41%, transparent 43% 60%, rgba(233, 185, 79, .14) 62% 66%, transparent 68% 85%, rgba(233, 185, 79, .14) 87% 91%, transparent 93%); animation: sweep 12s linear infinite; pointer-events: none; }
 .mcard > * { position: relative; }
 .modal.show .mcard { transform: none; }
@@ -276,7 +276,7 @@ h2.sec small { font-family: var(--f-mono); font-size: .8rem; color: var(--muted)
 .mcard h3 { margin: 0; font-family: var(--f-display); font-weight: 900; font-size: 1.7rem; line-height: 1.25; text-wrap: balance; animation: rise .5s var(--ease) .35s both; }
 .mcard p { margin: 0; color: var(--muted); font-size: .88rem; animation: rise .5s var(--ease) .45s both; }
 .mcard .btn { animation: rise .5s var(--ease) .55s both; }
-.slot { width: min(88vw, 360px); border-radius: 24px; padding: 22px; background: var(--surface); border: 1px solid var(--line); display: grid; gap: 14px; text-align: center; box-shadow: var(--shadow); transform: scale(.9); transition: transform .4s var(--spring); }
+.slot { box-sizing: border-box; width: min(88vw, 360px); border-radius: 24px; padding: 22px; background: var(--surface); border: 1px solid var(--line); display: grid; gap: 14px; text-align: center; box-shadow: var(--shadow); transform: scale(.9); transition: transform .4s var(--spring); }
 .modal.show .slot { transform: none; }
 .slot .kick { font-size: .72rem; letter-spacing: .3em; color: var(--gold); font-weight: 700; }
 .slot .reel { height: 120px; display: grid; grid-template-columns: 80px 1fr; gap: 14px; align-items: center; text-align: left; border-radius: 16px; background: var(--bg2); padding: 10px; overflow: hidden; border: 1px solid var(--line); transition: border-color .3s, box-shadow .3s; }
