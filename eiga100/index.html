@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow">
-<meta name="theme-color" content="#8f1f27">
+<meta name="theme-color" content="#13111a">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="名作映画100">
@@ -19,265 +19,859 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Old+Mincho:wght@600;700&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Old+Mincho:wght@600;700;900&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
 <style>
-/* Layout: one narrow column like a ticket roll — progress stub on top, then the three screens in watching order. */
+/* Layout: a single-theme cinema app — dark auditorium, velvet red for actions, gold for rewards. Four tabs (home / list / tickets / awards) above a fixed bottom bar; film details open as a bottom sheet. */
 :root {
-  --bg: #f6f7f9;
-  --surface: #ffffff;
-  --ink: #1c2230;
-  --muted: #687085;
-  --line: #e1e4ea;
-  --accent: #a3242c;
-  --accent-soft: #f6e3e4;
-  --done: #2f7a54;
-  --done-soft: #e2f1e8;
+  color-scheme: dark;
+  --bg: #13111a;
+  --bg2: #191621;
+  --surface: #211d2b;
+  --surface2: #2a2537;
+  --line: #352f44;
+  --ink: #f4efe6;
+  --muted: #a69fb3;
+  --faint: #6f6880;
+  --accent: #d63c4a;
+  --accent-ink: #fff4f0;
+  --gold: #e9b94f;
+  --gold-soft: rgba(233, 185, 79, .14);
+  --done: #62c895;
+  --shadow: 0 10px 30px rgba(0, 0, 0, .45);
+  --ease: cubic-bezier(.2, .9, .2, 1);
+  --spring: cubic-bezier(.2, 1.6, .4, 1);
   --f-display: "Zen Old Mincho", "Hiragino Mincho ProN", "Yu Mincho", serif;
   --f-body: "Zen Kaku Gothic New", "Hiragino Sans", "Yu Gothic", system-ui, sans-serif;
   --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
 }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #12151c; --surface: #1a1f29; --ink: #e8eaf0; --muted: #9aa1b2; --line: #2b3240;
-    --accent: #e0676d; --accent-soft: #3a2124; --done: #6cc496; --done-soft: #1b3226; color-scheme: dark;
-  }
+html, body { background: var(--bg); }
+body { color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.6; -webkit-tap-highlight-color: transparent; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 30; background: var(--bg); }
+button { font: inherit; color: inherit; }
+.app { max-width: 560px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 12px calc(96px + env(safe-area-inset-bottom, 0px)); }
+.view { display: grid; gap: 18px; }
+.view[hidden] { display: none !important; }
+.view:not([hidden]) > * { animation: rise .45s var(--ease) both; }
+.view:not([hidden]) > :nth-child(2) { animation-delay: .04s; }
+.view:not([hidden]) > :nth-child(3) { animation-delay: .08s; }
+.view:not([hidden]) > :nth-child(4) { animation-delay: .12s; }
+.view:not([hidden]) > :nth-child(5) { animation-delay: .16s; }
+.view:not([hidden]) > :nth-child(n+6) { animation-delay: .2s; }
+.topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-block: 6px 2px; }
+.brand { font-family: var(--f-display); font-weight: 900; font-size: 1.15rem; letter-spacing: .04em; }
+.brand span { color: var(--gold); }
+.iconbtn { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; width: 38px; height: 38px; display: grid; place-items: center; cursor: pointer; transition: transform .2s var(--spring); }
+.iconbtn:active { transform: scale(.88); }
+.iconbtn svg { width: 18px; height: 18px; }
+.iconbtn:focus-visible, .tab:focus-visible, .btn:focus-visible, .chk:focus-visible, .open:focus-visible, .seg button:focus-visible, .star:focus-visible, .ticket:focus-visible, .switch:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+h2.sec { font-family: var(--f-display); font-size: 1.15rem; margin: 6px 0 0; display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+h2.sec small { font-family: var(--f-mono); font-size: .8rem; color: var(--muted); font-weight: 500; }
+
+/* hero */
+.hero { position: relative; border-radius: 22px; padding: 20px; background: radial-gradient(120% 90% at 50% 0%, #3a1d2a 0%, var(--surface) 55%, var(--bg2) 100%); border: 1px solid var(--line); display: grid; grid-template-columns: 132px 1fr; gap: 18px; align-items: center; overflow: hidden; }
+.hero::after { content: ""; position: absolute; inset: -40% -60%; background: conic-gradient(from 0deg, transparent 0 80%, rgba(233, 185, 79, .10) 88%, transparent 96%); animation: sweep 9s linear infinite; pointer-events: none; }
+.ring { position: relative; width: 132px; height: 132px; z-index: 1; }
+.ring svg { width: 100%; height: 100%; transform: rotate(-90deg); overflow: visible; }
+.ring .track { stroke: rgba(255, 255, 255, .08); }
+.ring .fill { transition: stroke-dashoffset 1.1s var(--ease); filter: drop-shadow(0 0 6px rgba(233, 185, 79, .45)); }
+.ring .num { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; }
+.ring .num b { font-family: var(--f-mono); font-size: 2.4rem; font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums; display: inline-block; }
+.ring .num b.bump { animation: bump .5s var(--spring); }
+.ring .num span { display: block; font-size: .72rem; color: var(--muted); margin-top: 4px; }
+.rankbox { display: grid; gap: 6px; min-width: 0; z-index: 1; }
+.rankbox small { font-size: .68rem; letter-spacing: .18em; color: var(--gold); font-weight: 700; }
+.rankbox .rname { font-family: var(--f-display); font-weight: 900; font-size: 1.55rem; line-height: 1.2; text-wrap: balance; }
+.rbar { height: 6px; border-radius: 3px; background: rgba(255, 255, 255, .08); overflow: hidden; }
+.rbar i { display: block; height: 100%; width: 0; border-radius: 3px; background: linear-gradient(90deg, var(--gold), #ffd98a, var(--gold)); background-size: 200% 100%; animation: flow 2.4s linear infinite; transition: width .9s var(--ease); }
+.rankbox .rnext { font-size: .8rem; color: var(--muted); }
+.stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.stat { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px; display: grid; gap: 2px; min-width: 0; }
+.stat b { font-family: var(--f-mono); font-weight: 600; font-size: 1.35rem; font-variant-numeric: tabular-nums; display: flex; align-items: center; gap: 4px; }
+.stat b svg { width: 18px; height: 18px; }
+.stat span { font-size: .72rem; color: var(--muted); }
+.stat.hot b { color: #ff9a5a; }
+.stat.hot b svg { animation: flicker 1.4s ease-in-out infinite; transform-origin: 50% 100%; }
+
+/* next card */
+.nextcard { border-radius: 20px; background: var(--surface); border: 1px solid var(--line); overflow: hidden; display: grid; }
+.nextcard .nc-top { display: grid; grid-template-columns: 92px 1fr; gap: 14px; padding: 14px; align-items: center; }
+.nextcard .label { font-size: .68rem; letter-spacing: .16em; font-weight: 700; color: var(--accent); }
+.nextcard .label.gacha { color: var(--gold); }
+.nextcard h3 { margin: 2px 0 4px; font-family: var(--f-display); font-size: 1.35rem; line-height: 1.3; text-wrap: balance; }
+.nextcard .meta { font-size: .8rem; color: var(--muted); }
+.nextcard .pre { padding: 0 14px 12px; font-size: .88rem; color: #d9d2e4; }
+.nextcard .acts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 0 14px 14px; }
+.btn { border: 1px solid var(--line); background: var(--surface2); border-radius: 12px; padding: 11px 12px; font-weight: 700; font-size: .92rem; cursor: pointer; text-align: center; transition: transform .18s var(--spring), filter .2s; }
+.btn:active { transform: scale(.95); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); box-shadow: 0 6px 18px rgba(214, 60, 74, .35); }
+.btn.gold { position: relative; overflow: hidden; background: linear-gradient(135deg, #f3cf72, #d9a136); border-color: transparent; color: #2a1d05; box-shadow: 0 6px 20px rgba(233, 185, 79, .3); }
+.btn.gold::after { content: ""; position: absolute; top: 0; bottom: 0; width: 40%; left: -60%; background: linear-gradient(100deg, transparent, rgba(255, 255, 255, .55), transparent); animation: shine 3.2s ease-in-out infinite; }
+.btn.ghost { background: transparent; }
+.btn.wide { width: 100%; }
+.recent { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; scroll-snap-type: x mandatory; }
+.recent::-webkit-scrollbar { display: none; }
+.recent .ticket { flex: 0 0 150px; scroll-snap-align: start; }
+.status { font-size: .82rem; color: var(--gold); margin: 0; }
+
+/* poster tile */
+.poster { position: relative; aspect-ratio: 2 / 3; border-radius: 10px; overflow: hidden; display: grid; align-content: space-between; padding: 7px; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .08), 0 4px 12px rgba(0, 0, 0, .3); color: #fff; }
+.poster .ch { font-family: var(--f-display); font-weight: 900; font-size: 1.9em; line-height: 1; text-shadow: 0 2px 8px rgba(0, 0, 0, .35); }
+.poster .yr { font-family: var(--f-mono); font-size: .62em; letter-spacing: .08em; opacity: .85; }
+.poster::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(255,255,255,.14), transparent 40%, rgba(0,0,0,.35)); pointer-events: none; }
+.poster.seen::before { content: ""; position: absolute; right: 5px; top: 5px; width: 18px; height: 18px; border-radius: 50%; background: var(--done) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3.5 8.5l3 3 6-7' fill='none' stroke='%23102018' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 12px no-repeat; z-index: 1; animation: pop .4s var(--spring); }
+
+/* list */
+.seg { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+.seg::-webkit-scrollbar { display: none; }
+.seg button { flex: 0 0 auto; border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 7px 14px; font-size: .85rem; cursor: pointer; white-space: nowrap; transition: background .2s, color .2s, transform .18s var(--spring); }
+.seg button:active { transform: scale(.94); }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); font-weight: 700; }
+.seg button small { font-family: var(--f-mono); margin-left: 6px; opacity: .7; }
+.grouphead { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin-top: 8px; }
+.grouphead h3 { margin: 0; font-family: var(--f-display); font-size: 1.05rem; }
+.grouphead h3 span { font-family: var(--f-body); font-size: .75rem; color: var(--muted); font-weight: 500; margin-left: 8px; }
+.grouphead small { font-family: var(--f-mono); color: var(--muted); }
+.gbar { height: 4px; border-radius: 2px; background: rgba(255,255,255,.07); overflow: hidden; }
+.gbar i { display: block; height: 100%; background: var(--done); border-radius: 2px; transition: width .8s var(--ease); }
+.list { display: grid; gap: 8px; list-style: none; margin: 0; padding: 0; }
+.item { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 8px; transition: background .3s, border-color .3s; }
+.anim .item { animation: rise .4s var(--ease) both; animation-delay: calc(var(--i, 0) * 22ms); }
+.item.is-next { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset, 0 0 22px rgba(214, 60, 74, .18); }
+.item.is-done { background: var(--bg2); }
+.open { all: unset; box-sizing: border-box; display: grid; grid-template-columns: 48px 1fr; gap: 12px; align-items: center; cursor: pointer; min-width: 0; border-radius: 10px; }
+.open .poster { font-size: 13px; width: 48px; transition: transform .25s var(--spring); }
+.open:active .poster { transform: scale(.92) rotate(-2deg); }
+.it-txt { min-width: 0; display: grid; gap: 2px; }
+.it-t { font-weight: 700; font-size: .98rem; line-height: 1.35; }
+.item.is-done .it-t { color: var(--muted); }
+.it-sub { font-size: .76rem; color: var(--muted); display: flex; flex-wrap: wrap; gap: 2px 8px; align-items: center; }
+.it-sub .mono { font-family: var(--f-mono); }
+.tag { font-size: .68rem; border-radius: 5px; padding: 0 6px; line-height: 1.7; background: rgba(255,255,255,.06); color: var(--muted); }
+.tag.heavy { background: rgba(214, 60, 74, .16); color: #ff8c95; }
+.tag.light { background: rgba(98, 200, 149, .12); color: var(--done); }
+.tag.next { background: var(--accent); color: var(--accent-ink); font-weight: 700; }
+.stars-mini { color: var(--gold); letter-spacing: 1px; font-size: .78rem; }
+.chk { position: relative; width: 44px; height: 44px; border-radius: 50%; border: 2px solid var(--line); background: transparent; display: grid; place-items: center; cursor: pointer; transition: background .25s, border-color .25s; }
+.chk svg { width: 20px; height: 20px; opacity: .25; }
+.chk svg path { stroke-dasharray: 24; stroke-dashoffset: 0; }
+.chk[aria-checked="true"] { background: var(--done); border-color: var(--done); color: #0e2219; }
+.chk[aria-checked="true"] svg { opacity: 1; }
+.chk.pop { animation: pop .45s var(--spring); }
+.chk.pop svg path { animation: draw .35s ease-out; }
+.chk.pop::after { content: ""; position: absolute; inset: -2px; border-radius: 50%; border: 2px solid var(--done); animation: ripple .6s ease-out forwards; }
+.toggle-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.switch { display: inline-flex; align-items: center; gap: 8px; font-size: .85rem; color: var(--muted); cursor: pointer; border: 0; background: none; padding: 4px 0; }
+.switch i { width: 36px; height: 20px; border-radius: 10px; background: var(--line); position: relative; transition: background .2s; }
+.switch i::after { content: ""; position: absolute; left: 2px; top: 2px; width: 16px; height: 16px; border-radius: 50%; background: var(--ink); transition: transform .25s var(--spring); }
+.switch[aria-pressed="true"] i { background: var(--done); }
+.switch[aria-pressed="true"] i::after { transform: translateX(16px); }
+
+/* tickets */
+.tgrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.ticket { position: relative; overflow: hidden; border-radius: 12px; padding: 12px 14px 12px 16px; background: linear-gradient(160deg, #f7ecd6, #ecd9b4); color: #2a1f12; display: grid; gap: 4px; min-width: 0; -webkit-mask: radial-gradient(circle 8px at 0 50%, transparent 98%, #000) left / 51% 100% no-repeat, radial-gradient(circle 8px at 100% 50%, transparent 98%, #000) right / 51% 100% no-repeat; mask: radial-gradient(circle 8px at 0 50%, transparent 98%, #000) left / 51% 100% no-repeat, radial-gradient(circle 8px at 100% 50%, transparent 98%, #000) right / 51% 100% no-repeat; cursor: pointer; border: 0; text-align: left; transition: transform .25s var(--spring); }
+.ticket:active { transform: scale(.96) rotate(-1deg); }
+.ticket .no { font-family: var(--f-mono); font-size: .68rem; letter-spacing: .14em; color: #8a2430; font-weight: 600; display: flex; justify-content: space-between; }
+.ticket .tt { font-family: var(--f-display); font-weight: 900; font-size: 1rem; line-height: 1.3; }
+.ticket .td { font-family: var(--f-mono); font-size: .7rem; color: #6b5a40; border-top: 1px dashed rgba(42, 31, 18, .3); padding-top: 4px; display: flex; justify-content: space-between; gap: 6px; }
+.ticket .td .st { color: #b07a10; letter-spacing: 1px; }
+.ticket.gold { background: linear-gradient(160deg, #ffe7a3, #e5b54c); }
+.ticket.gold::after { content: ""; position: absolute; top: 0; bottom: 0; width: 45%; left: -60%; background: linear-gradient(100deg, transparent, rgba(255, 255, 255, .7), transparent); animation: shine 2.8s ease-in-out infinite; pointer-events: none; }
+.ticket.fresh { animation: stamp .7s var(--spring) both; }
+.ticket.empty { background: transparent; color: var(--faint); -webkit-mask: none; mask: none; border: 1px dashed var(--line); display: grid; place-items: center; min-height: 92px; font-family: var(--f-mono); font-size: .8rem; cursor: default; }
+.tnote { font-size: .82rem; color: var(--muted); margin: 0; }
+
+/* awards */
+.awards { display: grid; gap: 10px; }
+.aw { display: grid; grid-template-columns: 44px 1fr auto; gap: 4px 12px; align-items: center; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px; }
+.aw .medal { grid-row: span 2; width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; background: rgba(255,255,255,.05); color: var(--faint); }
+.aw .medal svg { width: 22px; height: 22px; }
+.aw.got { border-color: rgba(233, 185, 79, .45); background: linear-gradient(90deg, var(--gold-soft), var(--surface) 70%); }
+.aw.got .medal { background: radial-gradient(circle at 35% 30%, #ffe9a8, #d39b2a); color: #3a2604; box-shadow: 0 0 18px rgba(233, 185, 79, .35); }
+.aw .an { font-weight: 700; font-size: .95rem; }
+.aw .ad { font-size: .75rem; color: var(--muted); }
+.aw .ap { font-family: var(--f-mono); font-size: .8rem; color: var(--muted); white-space: nowrap; }
+.aw.got .ap { color: var(--gold); }
+.aw .abar { grid-column: 2 / 4; height: 4px; border-radius: 2px; background: rgba(255,255,255,.07); overflow: hidden; }
+.aw .abar i { display: block; height: 100%; background: var(--gold); transition: width .9s var(--ease); }
+.rankladder { display: grid; gap: 6px; }
+.rl { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border-radius: 10px; background: var(--surface); border: 1px solid var(--line); font-size: .88rem; }
+.rl b { font-family: var(--f-display); }
+.rl span { font-family: var(--f-mono); color: var(--muted); font-size: .8rem; }
+.rl.cur { border-color: var(--gold); background: var(--gold-soft); box-shadow: 0 0 16px rgba(233, 185, 79, .18); }
+.rl.past b { color: var(--gold); }
+
+/* bottom nav */
+.nav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; background: rgba(19, 17, 26, .92); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); border-top: 1px solid var(--line); padding: 6px max(10px, env(safe-area-inset-right, 0px)) calc(6px + env(safe-area-inset-bottom, 0px)) max(10px, env(safe-area-inset-left, 0px)); }
+.nav .in { max-width: 560px; margin: 0 auto; display: grid; grid-template-columns: repeat(4, 1fr); }
+.tab { border: 0; background: none; display: grid; justify-items: center; gap: 2px; padding: 6px 0; font-size: .7rem; color: var(--faint); cursor: pointer; position: relative; transition: color .2s; }
+.tab svg { width: 22px; height: 22px; transition: transform .25s var(--spring); }
+.tab[aria-current="page"] { color: var(--ink); }
+.tab[aria-current="page"] svg { color: var(--gold); transform: translateY(-2px) scale(1.08); }
+.tab .dot { position: absolute; top: 2px; left: calc(50% + 8px); min-width: 16px; height: 16px; border-radius: 8px; background: var(--accent); color: #fff; font-size: .62rem; font-family: var(--f-mono); display: grid; place-items: center; padding: 0 4px; }
+.tab .dot.bump { animation: bump .5s var(--spring); }
+
+/* sheet */
+.backdrop { position: fixed; inset: 0; background: rgba(0, 0, 0, .55); z-index: 40; opacity: 0; transition: opacity .25s; }
+.backdrop.show { opacity: 1; }
+.sheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 41; max-height: 90vh; max-height: 90dvh; background: var(--bg2); border-radius: 22px 22px 0 0; border-top: 1px solid var(--line); transform: translateY(105%); transition: transform .38s var(--ease); display: grid; grid-template-rows: auto 1fr auto; box-shadow: var(--shadow); }
+.sheet.show { transform: translateY(0); }
+.sheet .in { max-width: 560px; width: 100%; margin: 0 auto; box-sizing: border-box; padding-left: max(18px, env(safe-area-inset-left, 0px)); padding-right: max(18px, env(safe-area-inset-right, 0px)); }
+.sheet .grab { width: 40px; height: 5px; border-radius: 3px; background: var(--line); margin: 10px auto 0; }
+.sheet .body { overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain; }
+.sh-head { display: grid; grid-template-columns: 96px 1fr; gap: 16px; padding-block: 14px 6px; align-items: end; }
+.sh-head .poster { font-size: 22px; width: 96px; }
+.sheet.show .sh-head .poster { animation: tilt .6s var(--spring) both; }
+.sh-head h3 { margin: 0; font-family: var(--f-display); font-size: 1.5rem; line-height: 1.25; text-wrap: balance; }
+.sh-head .orig { font-size: .8rem; color: var(--muted); font-style: italic; margin-top: 2px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; padding-block: 8px; }
+.chip { font-size: .75rem; border-radius: 999px; padding: 3px 10px; background: var(--surface); border: 1px solid var(--line); color: #d9d2e4; }
+.chip.svc { border-color: rgba(233, 185, 79, .4); color: var(--gold); }
+.notes { display: grid; gap: 16px; padding-block: 8px 20px; }
+.sheet.show .notes > div { animation: rise .45s var(--ease) both; }
+.sheet.show .notes > div:nth-child(2) { animation-delay: .05s; }
+.sheet.show .notes > div:nth-child(3) { animation-delay: .1s; }
+.sheet.show .notes > div:nth-child(n+4) { animation-delay: .15s; }
+.notes .nt { font-size: .7rem; letter-spacing: .16em; color: var(--gold); font-weight: 700; margin-bottom: 4px; }
+.notes p { margin: 0; line-height: 1.85; font-size: .93rem; color: #e6dfee; }
+.notes ul { margin: 0; padding-left: 1.1em; display: grid; gap: 6px; line-height: 1.75; font-size: .93rem; color: #e6dfee; }
+.notes .q { border-left: 3px solid var(--accent); padding: 6px 12px; background: var(--surface); border-radius: 0 10px 10px 0; font-family: var(--f-display); font-weight: 700; }
+.sh-foot { border-top: 1px solid var(--line); padding-block: 10px calc(10px + env(safe-area-inset-bottom, 0px)); background: var(--bg2); }
+.sh-foot .row { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: center; }
+.rate { display: flex; gap: 2px; justify-content: center; }
+.sh-foot .rate { justify-content: flex-start; }
+.star { border: 0; background: none; padding: 4px; cursor: pointer; color: var(--line); font-size: 1.6rem; line-height: 1; transition: transform .2s var(--spring), color .15s; }
+.star.on { color: var(--gold); text-shadow: 0 0 10px rgba(233, 185, 79, .5); }
+.star.pulse { animation: bump .45s var(--spring); }
+.star:active { transform: scale(1.35); }
+.seenline { font-size: .82rem; color: var(--done); }
+
+/* overlays */
+#fx { position: fixed; inset: 0; pointer-events: none; z-index: 70; width: 100%; height: 100%; }
+.toast { position: fixed; left: 50%; bottom: calc(84px + env(safe-area-inset-bottom, 0px)); transform: translate(-50%, 24px) scale(.96); opacity: 0; pointer-events: none; transition: opacity .25s, transform .35s var(--spring); z-index: 60; background: var(--ink); color: var(--bg); border-radius: 16px; padding: 10px 16px; width: min(92vw, 380px); box-sizing: border-box; display: grid; gap: 4px; justify-items: center; box-shadow: var(--shadow); text-align: center; }
+.toast.show { opacity: 1; transform: translate(-50%, 0) scale(1); pointer-events: auto; }
+.toast b { font-size: 1rem; }
+.toast small { font-size: .78rem; opacity: .75; }
+.toast .rate .star { color: #cfc6d8; font-size: 1.5rem; text-shadow: none; }
+.toast .rate .star.on { color: #d79a1d; }
+.modal { position: fixed; inset: 0; z-index: 65; display: grid; place-items: center; padding: 24px; background: rgba(8, 6, 12, .72); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); opacity: 0; pointer-events: none; transition: opacity .25s; }
+.modal.show { opacity: 1; pointer-events: auto; }
+.mcard { position: relative; overflow: hidden; width: min(88vw, 360px); border-radius: 24px; padding: 26px 22px 20px; text-align: center; display: grid; gap: 10px; justify-items: center; background: radial-gradient(120% 80% at 50% 0%, #4a3410, var(--surface) 65%); border: 1px solid rgba(233, 185, 79, .5); box-shadow: 0 0 60px rgba(233, 185, 79, .25), var(--shadow); transform: scale(.7) translateY(20px); transition: transform .5s var(--spring); }
+.mcard::before { content: ""; position: absolute; inset: -50%; background: conic-gradient(from 0deg, transparent 0 10%, rgba(233, 185, 79, .14) 12% 16%, transparent 18% 35%, rgba(233, 185, 79, .14) 37% 41%, transparent 43% 60%, rgba(233, 185, 79, .14) 62% 66%, transparent 68% 85%, rgba(233, 185, 79, .14) 87% 91%, transparent 93%); animation: sweep 12s linear infinite; pointer-events: none; }
+.mcard > * { position: relative; }
+.modal.show .mcard { transform: none; }
+.mcard .kick { font-size: .72rem; letter-spacing: .3em; color: var(--gold); font-weight: 700; }
+.mcard .medal { width: 84px; height: 84px; border-radius: 50%; display: grid; place-items: center; background: radial-gradient(circle at 35% 30%, #fff0bf, #d39b2a); color: #3a2604; box-shadow: 0 0 40px rgba(233, 185, 79, .55); animation: medal 1.1s var(--ease) both; }
+.mcard .medal svg { width: 40px; height: 40px; }
+.mcard h3 { margin: 0; font-family: var(--f-display); font-weight: 900; font-size: 1.7rem; line-height: 1.25; text-wrap: balance; animation: rise .5s var(--ease) .35s both; }
+.mcard p { margin: 0; color: var(--muted); font-size: .88rem; animation: rise .5s var(--ease) .45s both; }
+.mcard .btn { animation: rise .5s var(--ease) .55s both; }
+.slot { width: min(88vw, 360px); border-radius: 24px; padding: 22px; background: var(--surface); border: 1px solid var(--line); display: grid; gap: 14px; text-align: center; box-shadow: var(--shadow); transform: scale(.9); transition: transform .4s var(--spring); }
+.modal.show .slot { transform: none; }
+.slot .kick { font-size: .72rem; letter-spacing: .3em; color: var(--gold); font-weight: 700; }
+.slot .reel { height: 120px; display: grid; grid-template-columns: 80px 1fr; gap: 14px; align-items: center; text-align: left; border-radius: 16px; background: var(--bg2); padding: 10px; overflow: hidden; border: 1px solid var(--line); transition: border-color .3s, box-shadow .3s; }
+.slot .reel .poster { font-size: 18px; width: 80px; }
+.slot .reel h3 { margin: 0; font-family: var(--f-display); font-size: 1.25rem; line-height: 1.3; }
+.slot .reel p { margin: 4px 0 0; font-size: .78rem; color: var(--muted); }
+.slot .reel.spin > * { animation: reel .09s linear; }
+.slot .reel.landed { border-color: var(--gold); box-shadow: 0 0 24px rgba(233, 185, 79, .35); animation: bump .5s var(--spring); }
+.slot .acts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; transition: opacity .3s; }
+
+@keyframes pop { 0% { transform: scale(.7); } 60% { transform: scale(1.18); } 100% { transform: scale(1); } }
+@keyframes bump { 0% { transform: scale(1); } 40% { transform: scale(1.28); } 100% { transform: scale(1); } }
+@keyframes rise { from { transform: translateY(10px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes ripple { from { transform: scale(1); opacity: .9; } to { transform: scale(1.8); opacity: 0; } }
+@keyframes draw { from { stroke-dashoffset: 24; } to { stroke-dashoffset: 0; } }
+@keyframes shine { 0%, 60% { left: -60%; } 100% { left: 130%; } }
+@keyframes flow { from { background-position: 0 0; } to { background-position: -200% 0; } }
+@keyframes sweep { to { transform: rotate(360deg); } }
+@keyframes flicker { 0%, 100% { transform: scaleY(1) rotate(-2deg); } 50% { transform: scaleY(1.12) rotate(2deg); } }
+@keyframes stamp { 0% { transform: scale(1.5) rotate(-10deg); opacity: 0; } 60% { transform: scale(.95) rotate(2deg); opacity: 1; } 100% { transform: none; } }
+@keyframes tilt { 0% { transform: translateY(16px) rotate(-6deg) scale(.9); opacity: 0; } 100% { transform: none; opacity: 1; } }
+@keyframes medal { 0% { transform: rotateY(0) scale(.3); } 70% { transform: rotateY(700deg) scale(1.1); } 100% { transform: rotateY(720deg) scale(1); } }
+@keyframes reel { from { transform: translateY(-40%); opacity: .3; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
 }
-:root[data-theme="dark"] {
-  --bg: #12151c; --surface: #1a1f29; --ink: #e8eaf0; --muted: #9aa1b2; --line: #2b3240;
-  --accent: #e0676d; --accent-soft: #3a2124; --done: #6cc496; --done-soft: #1b3226; color-scheme: dark;
+@media (max-width: 380px) {
+  .hero { grid-template-columns: 110px 1fr; padding: 16px; gap: 14px; }
+  .ring { width: 110px; height: 110px; }
+  .ring .num b { font-size: 2rem; }
+  .rankbox .rname { font-size: 1.3rem; }
 }
-body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.6; }
-.wrap { max-width: 640px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 20px 48px; display: grid; gap: 28px; }
-header { display: grid; gap: 14px; }
-h1 { font-family: var(--f-display); font-weight: 700; font-size: 1.9rem; line-height: 1.2; margin: 0; text-wrap: balance; letter-spacing: .02em; }
-.count { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
-.count b { font-family: var(--f-mono); font-weight: 500; font-size: 2.4rem; line-height: 1; font-variant-numeric: tabular-nums; }
-.count span { color: var(--muted); font-size: .9rem; }
-.bar { height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; }
-.bar i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .3s ease; }
-.next { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; display: grid; gap: 2px; }
-.next small { font-size: .72rem; letter-spacing: .12em; color: var(--accent); font-weight: 700; }
-.next strong { font-family: var(--f-display); font-size: 1.25rem; font-weight: 700; }
-.next em { font-style: normal; color: var(--muted); font-size: .85rem; }
-.status { font-size: .82rem; color: var(--muted); }
-.status[data-kind="warn"] { color: var(--accent); }
-.tools { display: flex; gap: 8px; flex-wrap: wrap; }
-.chip { font: inherit; font-size: .85rem; border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 999px; padding: 6px 14px; cursor: pointer; }
-.chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
-.chip:focus-visible, .film:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-section { display: grid; gap: 10px; }
-.sec-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; border-bottom: 2px solid var(--ink); padding-bottom: 6px; }
-.sec-head h2 { font-family: var(--f-display); font-size: 1.3rem; margin: 0; font-weight: 700; }
-.sec-head h2 span { font-family: var(--f-body); font-size: .8rem; font-weight: 500; color: var(--muted); margin-left: 8px; }
-.sec-head .n { font-family: var(--f-mono); font-size: .9rem; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
-ul { list-style: none; margin: 0; padding: 0; display: grid; }
-li + li { border-top: 1px dashed var(--line); }
-.row { display: grid; grid-template-columns: 26px 1fr; gap: 12px; align-items: start; padding: 12px 4px; }
-.film { all: unset; box-sizing: border-box; display: grid; place-items: center; width: 26px; height: 26px; cursor: pointer; border-radius: 6px; margin-top: 1px; }
-.film[aria-disabled="true"] { cursor: default; }
-.box { width: 22px; height: 22px; border: 2px solid var(--muted); border-radius: 6px; display: grid; place-items: center; transition: background .15s, border-color .15s; }
-.box svg { width: 14px; height: 14px; opacity: 0; }
-.film[aria-checked="true"] .box { background: var(--done); border-color: var(--done); }
-.film[aria-checked="true"] .box svg { opacity: 1; }
-.meta { min-width: 0; display: grid; gap: 1px; }
-.t { font-weight: 700; font-size: 1rem; }
-.row.is-done .t { color: var(--muted); text-decoration: line-through; text-decoration-color: var(--muted); }
-.sub { font-size: .8rem; color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 10px; }
-.sub .y { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
-.sub .w { color: var(--done); font-weight: 500; }
-.row.is-next .t::after { content: "次はこれ"; font-size: .68rem; font-weight: 700; color: var(--accent); background: var(--accent-soft); border-radius: 4px; padding: 1px 6px; margin-left: 8px; vertical-align: 2px; }
-details { min-width: 0; }
-summary { list-style: none; cursor: pointer; display: grid; gap: 1px; border-radius: 6px; }
-summary::-webkit-details-marker { display: none; }
-summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.more { font-size: .75rem; color: var(--accent); font-weight: 500; }
-details[open] .more::after { content: "（とじる）"; }
-.tag { font-size: .72rem; border: 1px solid var(--line); border-radius: 4px; padding: 0 6px; line-height: 1.6; }
-.tag.heavy { border-color: var(--accent); color: var(--accent); }
-.notes { display: grid; gap: 8px; margin-top: 8px; padding: 10px 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; font-size: .88rem; }
-.notes dt { font-size: .7rem; font-weight: 700; letter-spacing: .1em; color: var(--muted); }
-.notes dd { margin: 0; line-height: 1.75; }
-.notes { gap: 12px; padding: 14px 14px; }
-.pts { display: grid; gap: 4px; padding-left: 1.1em; margin: 0; list-style: disc; }
-.pts li + li { border-top: 0; }
-.empty { color: var(--muted); font-size: .9rem; padding: 8px 4px; }
-footer { color: var(--muted); font-size: .8rem; display: grid; gap: 4px; }
-@media (prefers-reduced-motion: reduce) { .bar i, .box { transition: none; } }
 </style>
 
-<div class="wrap">
-  <header>
-    <h1>名作映画100本</h1>
-    <div class="count"><b id="done">0</b><span>／100本 見た</span><span id="left"></span></div>
-    <div class="bar" aria-hidden="true"><i id="barfill"></i></div>
-    <div class="next" id="next"></div>
-    <p class="status" id="status"></p>
-    <div class="tools">
-      <button class="chip" id="hideDone" type="button" aria-pressed="false">見た作品をかくす</button>
-      <button class="chip" id="copyRec" type="button" hidden>記録をコピー（クロコに渡す）</button>
+<div class="app">
+  <section class="view" id="v-home" aria-label="ホーム">
+    <div class="topbar">
+      <div class="brand">名作映画<span>100</span></div>
+      <button class="iconbtn" id="soundBtn" type="button" aria-label="効果音" aria-pressed="true"></button>
     </div>
-    <textarea id="recBox" hidden rows="6" style="width:100%;font:inherit;font-size:.85rem" aria-label="記録"></textarea>
-    <div hidden>
+    <div class="hero">
+      <div class="ring" aria-hidden="true">
+        <svg viewBox="0 0 120 120"><defs><linearGradient id="rg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffd98a"/><stop offset="1" stop-color="#d63c4a"/></linearGradient></defs><circle class="track" cx="60" cy="60" r="52" fill="none" stroke-width="10"/><circle class="fill" id="ringFill" cx="60" cy="60" r="52" fill="none" stroke="url(#rg)" stroke-width="10" stroke-linecap="round" stroke-dasharray="326.73" stroke-dashoffset="326.73"/></svg>
+        <div class="num"><div><b id="cnt">0</b><span>／100本</span></div></div>
+      </div>
+      <div class="rankbox">
+        <small>称号</small>
+        <div class="rname" id="rname">見習い</div>
+        <div class="rbar"><i id="rbar"></i></div>
+        <div class="rnext" id="rnext"></div>
+      </div>
     </div>
-  </header>
-  <main id="groups" style="display:grid;gap:28px"></main>
-  <footer>
-    <p>左の四角をタップすると「見た」になり、もう一度タップで戻ります。チェックはこのスマホのブラウザの中に保存されます（別のスマホやブラウザには引き継がれません）。ときどき「記録をコピー」でクロコに渡してください。題名をタップすると見る前のメモが開きます。</p>
-    <p>見る前のメモと上映時間はクロコが書いた目安です（版によって長さが違います）。批評家の評価やよく言われる感想として知っていることから書いたもので、レビューサイトを直接読んだものではありません。結末には触れていません。</p>
-    <p>見られるサービスは 2026-11-05 時点の目安です。月ごとに入れ替わるので、見る前にアプリで確かめてください。</p>
-  </footer>
+    <div class="stats" id="stats"></div>
+    <p class="status" id="status" hidden></p>
+    <div class="nextcard" id="nextcard"></div>
+    <button class="btn gold wide" id="gachaBtn" type="button">迷ったら 今日の1本を引く</button>
+    <h2 class="sec" id="recentHead" hidden>最近のチケット <small id="recentCount"></small></h2>
+    <div class="recent" id="recent"></div>
+  </section>
+
+  <section class="view" id="v-list" aria-label="リスト" hidden>
+    <div class="topbar"><div class="brand">リスト</div></div>
+    <div class="seg" id="seg" role="group" aria-label="サービスでしぼる"></div>
+    <div class="toggle-row">
+      <button class="switch" id="hideSwitch" type="button" aria-pressed="false"><i></i>見た作品をかくす</button>
+      <small class="tnote" id="listCount"></small>
+    </div>
+    <div id="lists" style="display:grid;gap:14px"></div>
+  </section>
+
+  <section class="view" id="v-tickets" aria-label="チケット帳" hidden>
+    <div class="topbar"><div class="brand">チケット帳</div></div>
+    <p class="tnote" id="ticketNote"></p>
+    <div class="tgrid" id="tgrid"></div>
+    <button class="btn wide" id="copyBtn" type="button" hidden>記録をコピー（クロコに渡す）</button>
+    <textarea id="recBox" hidden rows="6" style="width:100%;box-sizing:border-box;font:inherit;font-size:.85rem;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:8px" aria-label="記録"></textarea>
+  </section>
+
+  <section class="view" id="v-awards" aria-label="実績" hidden>
+    <div class="topbar"><div class="brand">実績</div></div>
+    <h2 class="sec">称号 <small id="ladderNote"></small></h2>
+    <div class="rankladder" id="ladder"></div>
+    <h2 class="sec">バッジ <small id="awardCount"></small></h2>
+    <div class="awards" id="awards"></div>
+    <p class="tnote">見る前のメモと上映時間はクロコが書いた目安です。批評家の評価やよく言われる感想として知っていることから書いていて、レビューサイトを直接読んだものではありません。見られるサービスは 2026-11-05 時点の目安です。</p>
+  </section>
 </div>
+
+<nav class="nav" aria-label="画面の切り替え"><div class="in" id="tabs"></div></nav>
+
+<div class="backdrop" id="backdrop" hidden></div>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="shTitle" hidden>
+  <div class="grab" aria-hidden="true"></div>
+  <div class="body"><div class="in" id="shBody"></div></div>
+  <div class="sh-foot"><div class="in" id="shFoot"></div></div>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div class="modal" id="modal" hidden></div>
+<canvas id="fx" aria-hidden="true"></canvas>
 
 <script>
 const GROUPS = [{"key": "prime", "mark": "①", "name": "プライム", "note": "いちばん見やすい", "films": [{"n": 8, "y": "1946", "t": "素晴らしき哉、人生！", "o": "It's a Wonderful Life", "d": "フランク・キャプラ", "s": "プライム"}, {"n": 15, "y": "1953", "t": "ローマの休日", "o": "Roman Holiday", "d": "ウィリアム・ワイラー", "s": "U-NEXT、プライム"}, {"n": 28, "y": "1961", "t": "ティファニーで朝食を", "o": "Breakfast at Tiffany's", "d": "ブレイク・エドワーズ", "s": "U-NEXT、プライム"}, {"n": 43, "y": "1972", "t": "ゴッドファーザー", "o": "The Godfather", "d": "フランシス・フォード・コッポラ", "s": "U-NEXT、プライム"}, {"n": 46, "y": "1974", "t": "ゴッドファーザー PART II", "o": "The Godfather Part II", "d": "フランシス・フォード・コッポラ", "s": "U-NEXT、プライム"}, {"n": 49, "y": "1975", "t": "ジョーズ", "o": "Jaws", "d": "スティーヴン・スピルバーグ", "s": "U-NEXT、プライム"}, {"n": 51, "y": "1976", "t": "ロッキー", "o": "Rocky", "d": "ジョン・G・アヴィルドセン", "s": "U-NEXT、プライム"}, {"n": 59, "y": "1981", "t": "レイダース／失われたアーク《聖櫃》", "o": "Raiders of the Lost Ark", "d": "スティーヴン・スピルバーグ", "s": "U-NEXT、プライム"}, {"n": 60, "y": "1982", "t": "E.T.", "o": "E.T. the Extra-Terrestrial", "d": "スティーヴン・スピルバーグ", "s": "U-NEXT、プライム"}, {"n": 64, "y": "1985", "t": "バック・トゥ・ザ・フューチャー", "o": "Back to the Future", "d": "ロバート・ゼメキス", "s": "U-NEXT、プライム"}, {"n": 102, "y": "1988", "t": "レインマン", "o": "Rain Man", "d": "バリー・レヴィンソン", "s": "プライム、U-NEXT"}, {"n": 70, "y": "1991", "t": "羊たちの沈黙", "o": "The Silence of the Lambs", "d": "ジョナサン・デミ", "s": "U-NEXT、プライム"}, {"n": 72, "y": "1993", "t": "シンドラーのリスト", "o": "Schindler's List", "d": "スティーヴン・スピルバーグ", "s": "U-NEXT、プライム"}, {"n": 73, "y": "1993", "t": "ジュラシック・パーク", "o": "Jurassic Park", "d": "スティーヴン・スピルバーグ", "s": "U-NEXT、プライム"}, {"n": 74, "y": "1994", "t": "ショーシャンクの空に", "o": "The Shawshank Redemption", "d": "フランク・ダラボン", "s": "U-NEXT、プライム"}, {"n": 76, "y": "1994", "t": "フォレスト・ガンプ／一期一会", "o": "Forrest Gump", "d": "ロバート・ゼメキス", "s": "U-NEXT、プライム"}, {"n": 104, "y": "1996", "t": "ファーゴ", "o": "Fargo", "d": "ジョエル＆イーサン・コーエン", "s": "プライム、Netflix、U-NEXT"}, {"n": 84, "y": "1998", "t": "プライベート・ライアン", "o": "Saving Private Ryan", "d": "スティーヴン・スピルバーグ", "s": "U-NEXT、プライム"}, {"n": 105, "y": "1998", "t": "トゥルーマン・ショー", "o": "The Truman Show", "d": "ピーター・ウィアー", "s": "プライム、U-NEXT"}, {"n": 87, "y": "2000", "t": "グラディエーター", "o": "Gladiator", "d": "リドリー・スコット", "s": "U-NEXT、プライム"}, {"n": 89, "y": "2001", "t": "ロード・オブ・ザ・リング", "o": "The Lord of the Rings: The Fellowship of the Ring", "d": "ピーター・ジャクソン", "s": "U-NEXT、プライム"}, {"n": 106, "y": "2004", "t": "ミリオンダラー・ベイビー", "o": "Million Dollar Baby", "d": "クリント・イーストウッド", "s": "プライム、Netflix、U-NEXT"}, {"n": 107, "y": "2006", "t": "ディパーテッド", "o": "The Departed", "d": "マーティン・スコセッシ", "s": "プライム、Netflix、U-NEXT"}, {"n": 95, "y": "2010", "t": "インセプション", "o": "Inception", "d": "クリストファー・ノーラン", "s": "U-NEXT、プライム"}, {"n": 108, "y": "2011", "t": "最強のふたり", "o": "Intouchables", "d": "エリック・トレダノ／オリヴィエ・ナカシュ", "s": "プライム、U-NEXT"}, {"n": 109, "y": "2013", "t": "ゼロ・グラビティ", "o": "Gravity", "d": "アルフォンソ・キュアロン", "s": "プライム、U-NEXT"}, {"n": 97, "y": "2014", "t": "セッション", "o": "Whiplash", "d": "デイミアン・チャゼル", "s": "U-NEXT、プライム"}, {"n": 98, "y": "2014", "t": "インターステラー", "o": "Interstellar", "d": "クリストファー・ノーラン", "s": "U-NEXT、プライム"}, {"n": 110, "y": "2015", "t": "マッドマックス 怒りのデス・ロード", "o": "Mad Max: Fury Road", "d": "ジョージ・ミラー", "s": "プライム、U-NEXT"}, {"n": 99, "y": "2016", "t": "ラ・ラ・ランド", "o": "La La Land", "d": "デイミアン・チャゼル", "s": "U-NEXT、プライム"}, {"n": 111, "y": "2019", "t": "ジョーカー", "o": "Joker", "d": "トッド・フィリップス", "s": "プライム、U-NEXT"}]}, {"key": "netflix", "mark": "②", "name": "Netflix", "note": "自分で見られる", "films": [{"n": 101, "y": "1954", "t": "波止場", "o": "On the Waterfront", "d": "エリア・カザン", "s": "Netflix、U-NEXT"}, {"n": 20, "y": "1957", "t": "戦場にかける橋", "o": "The Bridge on the River Kwai", "d": "デヴィッド・リーン", "s": "U-NEXT、Netflix"}, {"n": 50, "y": "1976", "t": "タクシードライバー", "o": "Taxi Driver", "d": "マーティン・スコセッシ", "s": "U-NEXT、Netflix"}, {"n": 65, "y": "1986", "t": "スタンド・バイ・ミー", "o": "Stand by Me", "d": "ロブ・ライナー", "s": "U-NEXT、Netflix"}, {"n": 77, "y": "1994", "t": "レオン", "o": "Léon", "d": "リュック・ベッソン", "s": "U-NEXT、Netflix"}, {"n": 103, "y": "1995", "t": "ヒート", "o": "Heat", "d": "マイケル・マン", "s": "Netflix、U-NEXT"}, {"n": 100, "y": "2019", "t": "パラサイト 半地下の家族", "o": "기생충（Parasite）", "d": "ポン・ジュノ", "s": "Netflix、U-NEXT"}]}, {"key": "unext", "mark": "③", "name": "U-NEXT", "note": "同居人のアカウントを借りる", "films": [{"n": 1, "y": "1931", "t": "街の灯", "o": "City Lights", "d": "チャールズ・チャップリン", "s": "U-NEXT"}, {"n": 2, "y": "1936", "t": "モダン・タイムス", "o": "Modern Times", "d": "チャールズ・チャップリン", "s": "U-NEXT"}, {"n": 3, "y": "1939", "t": "風と共に去りぬ", "o": "Gone with the Wind", "d": "ヴィクター・フレミング", "s": "U-NEXT"}, {"n": 4, "y": "1939", "t": "オズの魔法使", "o": "The Wizard of Oz", "d": "ヴィクター・フレミング", "s": "U-NEXT"}, {"n": 5, "y": "1940", "t": "怒りの葡萄", "o": "The Grapes of Wrath", "d": "ジョン・フォード", "s": "U-NEXT"}, {"n": 6, "y": "1941", "t": "市民ケーン", "o": "Citizen Kane", "d": "オーソン・ウェルズ", "s": "U-NEXT"}, {"n": 7, "y": "1942", "t": "カサブランカ", "o": "Casablanca", "d": "マイケル・カーティズ", "s": "U-NEXT"}, {"n": 9, "y": "1948", "t": "自転車泥棒", "o": "Bicycle Thieves", "d": "ヴィットリオ・デ・シーカ", "s": "U-NEXT"}, {"n": 10, "y": "1949", "t": "第三の男", "o": "The Third Man", "d": "キャロル・リード", "s": "U-NEXT"}, {"n": 12, "y": "1950", "t": "サンセット大通り", "o": "Sunset Boulevard", "d": "ビリー・ワイルダー", "s": "U-NEXT"}, {"n": 13, "y": "1952", "t": "雨に唄えば", "o": "Singin' in the Rain", "d": "ジーン・ケリー／スタンリー・ドーネン", "s": "U-NEXT"}, {"n": 14, "y": "1952", "t": "禁じられた遊び", "o": "Jeux interdits", "d": "ルネ・クレマン", "s": "U-NEXT"}, {"n": 16, "y": "1954", "t": "裏窓", "o": "Rear Window", "d": "アルフレッド・ヒッチコック", "s": "U-NEXT"}, {"n": 17, "y": "1954", "t": "道", "o": "La Strada", "d": "フェデリコ・フェリーニ", "s": "U-NEXT"}, {"n": 18, "y": "1955", "t": "エデンの東", "o": "East of Eden", "d": "エリア・カザン", "s": "U-NEXT"}, {"n": 19, "y": "1957", "t": "十二人の怒れる男", "o": "12 Angry Men", "d": "シドニー・ルメット", "s": "U-NEXT"}, {"n": 21, "y": "1958", "t": "めまい", "o": "Vertigo", "d": "アルフレッド・ヒッチコック", "s": "U-NEXT"}, {"n": 22, "y": "1959", "t": "ベン・ハー", "o": "Ben-Hur", "d": "ウィリアム・ワイラー", "s": "U-NEXT"}, {"n": 23, "y": "1959", "t": "お熱いのがお好き", "o": "Some Like It Hot", "d": "ビリー・ワイルダー", "s": "U-NEXT"}, {"n": 24, "y": "1959", "t": "大人は判ってくれない", "o": "Les Quatre Cents Coups", "d": "フランソワ・トリュフォー", "s": "U-NEXT"}, {"n": 25, "y": "1960", "t": "サイコ", "o": "Psycho", "d": "アルフレッド・ヒッチコック", "s": "U-NEXT"}, {"n": 26, "y": "1960", "t": "アパートの鍵貸します", "o": "The Apartment", "d": "ビリー・ワイルダー", "s": "U-NEXT"}, {"n": 27, "y": "1960", "t": "太陽がいっぱい", "o": "Plein Soleil", "d": "ルネ・クレマン", "s": "U-NEXT"}, {"n": 30, "y": "1962", "t": "アラビアのロレンス", "o": "Lawrence of Arabia", "d": "デヴィッド・リーン", "s": "U-NEXT"}, {"n": 31, "y": "1962", "t": "アラバマ物語", "o": "To Kill a Mockingbird", "d": "ロバート・マリガン", "s": "U-NEXT"}, {"n": 32, "y": "1963", "t": "大脱走", "o": "The Great Escape", "d": "ジョン・スタージェス", "s": "U-NEXT"}, {"n": 33, "y": "1964", "t": "博士の異常な愛情", "o": "Dr. Strangelove", "d": "スタンリー・キューブリック", "s": "U-NEXT"}, {"n": 34, "y": "1964", "t": "マイ・フェア・レディ", "o": "My Fair Lady", "d": "ジョージ・キューカー", "s": "U-NEXT"}, {"n": 36, "y": "1967", "t": "卒業", "o": "The Graduate", "d": "マイク・ニコルズ", "s": "U-NEXT"}, {"n": 37, "y": "1967", "t": "俺たちに明日はない", "o": "Bonnie and Clyde", "d": "アーサー・ペン", "s": "U-NEXT"}, {"n": 38, "y": "1968", "t": "2001年宇宙の旅", "o": "2001: A Space Odyssey", "d": "スタンリー・キューブリック", "s": "U-NEXT"}, {"n": 41, "y": "1969", "t": "イージー・ライダー", "o": "Easy Rider", "d": "デニス・ホッパー", "s": "U-NEXT"}, {"n": 42, "y": "1971", "t": "時計じかけのオレンジ", "o": "A Clockwork Orange", "d": "スタンリー・キューブリック", "s": "U-NEXT"}, {"n": 44, "y": "1973", "t": "スティング", "o": "The Sting", "d": "ジョージ・ロイ・ヒル", "s": "U-NEXT"}, {"n": 45, "y": "1973", "t": "エクソシスト", "o": "The Exorcist", "d": "ウィリアム・フリードキン", "s": "U-NEXT"}, {"n": 47, "y": "1974", "t": "チャイナタウン", "o": "Chinatown", "d": "ロマン・ポランスキー", "s": "U-NEXT"}, {"n": 48, "y": "1975", "t": "カッコーの巣の上で", "o": "One Flew Over the Cuckoo's Nest", "d": "ミロス・フォアマン", "s": "U-NEXT"}, {"n": 53, "y": "1977", "t": "アニー・ホール", "o": "Annie Hall", "d": "ウディ・アレン", "s": "U-NEXT"}, {"n": 54, "y": "1978", "t": "ディア・ハンター", "o": "The Deer Hunter", "d": "マイケル・チミノ", "s": "U-NEXT"}, {"n": 55, "y": "1979", "t": "地獄の黙示録", "o": "Apocalypse Now", "d": "フランシス・フォード・コッポラ", "s": "U-NEXT"}, {"n": 57, "y": "1980", "t": "シャイニング", "o": "The Shining", "d": "スタンリー・キューブリック", "s": "U-NEXT"}, {"n": 58, "y": "1980", "t": "レイジング・ブル", "o": "Raging Bull", "d": "マーティン・スコセッシ", "s": "U-NEXT"}, {"n": 61, "y": "1982", "t": "ブレードランナー", "o": "Blade Runner", "d": "リドリー・スコット", "s": "U-NEXT"}, {"n": 62, "y": "1984", "t": "ターミネーター", "o": "The Terminator", "d": "ジェームズ・キャメロン", "s": "U-NEXT"}, {"n": 63, "y": "1984", "t": "アマデウス", "o": "Amadeus", "d": "ミロス・フォアマン", "s": "U-NEXT"}, {"n": 66, "y": "1988", "t": "ニュー・シネマ・パラダイス", "o": "Nuovo Cinema Paradiso", "d": "ジュゼッペ・トルナトーレ", "s": "U-NEXT"}, {"n": 69, "y": "1990", "t": "グッドフェローズ", "o": "Goodfellas", "d": "マーティン・スコセッシ", "s": "U-NEXT"}, {"n": 71, "y": "1991", "t": "ターミネーター2", "o": "Terminator 2: Judgment Day", "d": "ジェームズ・キャメロン", "s": "U-NEXT"}, {"n": 75, "y": "1994", "t": "パルプ・フィクション", "o": "Pulp Fiction", "d": "クエンティン・タランティーノ", "s": "U-NEXT"}, {"n": 78, "y": "1995", "t": "セブン", "o": "Se7en", "d": "デヴィッド・フィンチャー", "s": "U-NEXT"}, {"n": 79, "y": "1995", "t": "ユージュアル・サスペクツ", "o": "The Usual Suspects", "d": "ブライアン・シンガー", "s": "U-NEXT"}, {"n": 82, "y": "1997", "t": "グッド・ウィル・ハンティング／旅立ち", "o": "Good Will Hunting", "d": "ガス・ヴァン・サント", "s": "U-NEXT"}, {"n": 83, "y": "1997", "t": "ライフ・イズ・ビューティフル", "o": "La vita è bella", "d": "ロベルト・ベニーニ", "s": "U-NEXT"}, {"n": 85, "y": "1999", "t": "マトリックス", "o": "The Matrix", "d": "ウォシャウスキー姉妹", "s": "U-NEXT"}, {"n": 86, "y": "1999", "t": "ファイト・クラブ", "o": "Fight Club", "d": "デヴィッド・フィンチャー", "s": "Disney+、U-NEXT"}, {"n": 88, "y": "2000", "t": "メメント", "o": "Memento", "d": "クリストファー・ノーラン", "s": "U-NEXT"}, {"n": 90, "y": "2001", "t": "アメリ", "o": "Le Fabuleux Destin d'Amélie Poulain", "d": "ジャン＝ピエール・ジュネ", "s": "U-NEXT"}, {"n": 91, "y": "2002", "t": "戦場のピアニスト", "o": "The Pianist", "d": "ロマン・ポランスキー", "s": "U-NEXT"}, {"n": 92, "y": "2007", "t": "ノーカントリー", "o": "No Country for Old Men", "d": "ジョエル＆イーサン・コーエン", "s": "U-NEXT"}, {"n": 93, "y": "2008", "t": "ダークナイト", "o": "The Dark Knight", "d": "クリストファー・ノーラン", "s": "U-NEXT"}, {"n": 94, "y": "2008", "t": "スラムドッグ$ミリオネア", "o": "Slumdog Millionaire", "d": "ダニー・ボイル", "s": "U-NEXT"}, {"n": 96, "y": "2010", "t": "ソーシャル・ネットワーク", "o": "The Social Network", "d": "デヴィッド・フィンチャー", "s": "U-NEXT"}]}];
 const META = {"1": {"min": 87, "mood": "軽め", "pre": "1931年、世の中がトーキー（音の出る映画）に移った後もチャップリンがあえて作った無声映画。セリフは字幕カードだけ", "eye": "目の見えない花売りの娘と放浪者。ラスト数分の表情だけで語る場面", "bg": "音の出る映画（トーキー）が当たり前になった1931年に、チャップリンはあえてセリフなしで撮った。撮影には約3年かかり、花売り娘が放浪者を金持ちと勘違いする最初の出会いの場面だけで何百回も撮り直したと言われる。音楽はチャップリン自身の作曲", "rep": "チャップリンの最高傑作に挙げる人が多い。批評家の多くが「映画史でいちばん美しい結末の一つ」と書く。笑いの場面（ボクシングの試合など）と泣かせる場面の切り替えの速さもよく褒められる。逆に「古い・テンポが遅い」と感じる人もいる", "points": ["ボクシングの場面は振り付けのように計算された動きで、今見ても笑える", "酔うと友だちになり、しらふだと他人になる大富豪との関係。同じ人が全く違う顔を見せる", "最後の数分は字幕カードがほとんどなく、顔と手だけで話が進む"], "tips": "無声映画は「セリフがない分、俳優の顔と体を見る」ものだと思って見ると入りやすい。スマホのながら見だと何も残らないので、87分だけ画面に集中する日に", "after": "人を見た目や肩書きで判断するのをやめたとき、何が残るか。ラストの表情は何を言っていたか"}, "2": {"min": 87, "mood": "軽め", "pre": "工場の流れ作業と大恐慌の時代が舞台。機械に人間が合わせさせられる話", "eye": "歯車に巻き込まれる名場面と、チャップリンが初めて声を出す歌の場面", "bg": "大恐慌（1929年からの世界的な不況）のあと、工場の機械化で人が仕事を失った時代に作られた。チャップリンが世界旅行で見た失業と貧困が元になっている。チャップリンが演じる放浪者「チャーリー」が出てくる最後の映画", "rep": "社会風刺として今も古びないと言われる。とくに「人間が機械の一部にされる」描き方は、今の働き方の話としても読まれる。笑いの密度が高く、無声映画の入口として勧められることが多い", "points": ["流れ作業でネジを締め続けて体が止まらなくなる場面と、食事を機械に食べさせられる場面", "百貨店でのローラースケート。目隠しで吹き抜けの縁を滑る", "チャップリンの声が初めて映画で流れるのは、意味の通らない言葉で歌う場面"], "tips": "『街の灯』と続けて見ると、チャップリンが音の映画にどう抵抗していったかが分かる", "after": "機械（今ならアルゴリズムやAI）に合わせて働くことと、人間らしく働くことの境目はどこか"}, "3": {"min": 222, "mood": "ふつう", "pre": "南北戦争の頃のアメリカ南部。4時間近くあり途中に休憩が入る。2日に分けてよい", "eye": "主人公スカーレットは好かれる人ではない。それでも目が離せない理由を考えながら", "bg": "マーガレット・ミッチェルのベストセラー小説が原作。プロデューサーのセルズニックが主役スカーレット役を2年かけて探し、当時無名のヴィヴィアン・リーを選んだ。監督は途中で交代している。アカデミー賞10部門（特別賞含む）", "rep": "映画史に残る大作で、カラー撮影と群衆シーンの規模は今見ても圧倒的と言われる。一方で、奴隷制の南部を懐かしむ描き方や黒人の描かれ方は強く批判されていて、2020年には配信で注意書きが付けられた。名作であることと問題を抱えていることの両方を知って見るのが今の見方", "points": ["アトランタ炎上の場面。セットを実際に燃やして撮った", "スカーレットは自分勝手で計算高いのに、生き延びる力が強い。好き嫌いを超えて目が離せない人物像", "マミー役のハティ・マクダニエルは黒人として初めてアカデミー賞を受賞した"], "tips": "222分。前半（戦争まで）と後半（戦後）で区切って2日に分けるのがおすすめ。休憩の画面が出たら止めどき", "after": "スカーレットの「明日は明日の風が吹く」は前向きなのか、逃げなのか"}, "4": {"min": 101, "mood": "軽め", "pre": "前半はセピア色の白黒で、オズの国に入った瞬間からカラーになる。1939年にこれをやった", "eye": "色が変わる瞬間と『虹の彼方に』の歌", "bg": "1939年、当時最新だった「テクニカラー」というカラー撮影で作られた。ドロシー役のジュディ・ガーランドは撮影時16歳。ブリキ男の役者は銀色の化粧で体を壊し交代している", "rep": "アメリカでは子どもの頃にテレビで見る国民的な映画。『虹の彼方に』は20世紀を代表する歌に選ばれている。大人になって見ると「家に帰りたい」というテーマの切なさに気づく、という感想が多い", "points": ["白黒（セピア）のカンザスからカラーのオズの国へ扉を開ける瞬間", "かかし・ブリキ男・ライオンがそれぞれ欲しがるもの（知恵・心・勇気）", "オズの魔法使いの正体の描き方"], "tips": "子ども向けと思わずに、ミュージカルとして見る。歌の場面は飛ばさない", "after": "3人の仲間は、欲しかったものを本当は最初から持っていなかったか"}, "5": {"min": 129, "mood": "重め", "pre": "1930年代、砂嵐と不況で土地を追われた農家一家がカリフォルニアを目指す。原作はスタインベック", "eye": "家族の母の強さ。白黒の撮影の美しさ", "bg": "ジョン・スタインベックのピューリッツァー賞小説が原作。1930年代、砂嵐（ダストボウル）と不況でオクラホマの農家が土地を追われ、仕事を求めてカリフォルニアへ向かった実際の出来事が背景", "rep": "アメリカの貧困と労働を正面から描いた社会派の古典。ジョン・フォード監督の白黒の撮影が詩のように美しいと評価が高い。原作より結末が少し希望寄りに変えられていることもよく話題になる", "points": ["トラック1台に家族全員と家財を積んで国道66号線を行く旅", "長男トム・ジョードの最後の言葉（『どこにでも俺はいる』）", "母（マ）が家族をつなぎとめる場面"], "tips": "暗い話だが、家族の会話にユーモアもある。気持ちに余裕のある日に", "after": "働きたいのに仕事がない人がたくさんいるとき、悪いのは誰か"}, "6": {"min": 119, "mood": "ふつう", "pre": "新聞王の一生を、死に際の一言『バラのつぼみ』の意味を追う記者の取材で振り返る。監督ウェルズは当時25歳", "eye": "手前から奥まで全部にピントが合った画面と、下から見上げる構図。後の映画の撮り方を変えた", "bg": "ラジオドラマで有名になった25歳のオーソン・ウェルズが、脚本・監督・主演をすべて担当した最初の映画。主人公のモデルは実在の新聞王ハースト。ハースト側は公開を妨害し、当時は興行的に失敗した", "rep": "長い間「映画史上最高の作品」の投票で1位だった（英国の映画雑誌の投票で約50年間）。手前と奥に同時にピントを合わせる撮り方、天井まで映す低い位置からのカメラ、時間を行き来する語り方など、映画の文法を変えたと言われる。ただ初めて見ると「何がすごいのか分からない」という感想も多い", "points": ["何人もの証言者の話で一人の人生を組み立てる構成。証言ごとにケーンの印象が変わる", "朝食の場面で、夫婦の時間が数分で何年分も進むつなぎ", "最後に分かる『バラのつぼみ』"], "tips": "すごさは技術にあるので、1回目は話を追い、気に入ったら解説を読んでもう一度見ると楽しみが倍になる", "after": "お金と権力を全部手に入れた人が、最後に欲しかったものは何か"}, "7": {"min": 102, "mood": "ふつう", "pre": "第二次世界大戦中、ナチスから逃れる人が集まるモロッコのカサブランカの酒場が舞台", "eye": "『君の瞳に乾杯』など名セリフの多さ。酒場で2つの国歌がぶつかる場面", "bg": "第二次世界大戦中の1942年に公開。撮影開始時に脚本が完成しておらず、毎日書き足しながら撮った。結末も撮影中まで決まっていなかったと言われる。出演者の多くは実際にヨーロッパから逃げてきた人たちだった", "rep": "名セリフの数でいえば映画史トップクラス。恋愛映画、戦争映画、男の友情の映画のどれとしても見られる、完成度の高い娯楽作と言われる。「行き当たりばったりで作ったのに完璧になった奇跡」とよく言われる", "points": ["酒場でドイツ兵の歌に対抗してフランス国歌を歌う場面。歌っているエキストラの涙は本物と言われる", "ハンフリー・ボガートの皮肉屋リックが少しずつ本心を見せていく", "『君の瞳に乾杯』（日本語訳が有名になった例）"], "tips": "主な人物は5人ほど。最初の15分で誰が何を欲しがっているか（通行証）をつかめば迷わない", "after": "自分の気持ちより大事なものがあるとき、人はどう選ぶか"}, "8": {"min": 130, "mood": "ふつう", "pre": "アメリカではクリスマスに毎年流れる定番。前半は主人公の半生を順に見せる。前半が長く感じても最後まで見る価値あり", "eye": "小さな町の銀行と住宅ローンの話が軸。お金と人の信用の関係", "bg": "第二次世界大戦から帰ったばかりのジェームズ・スチュワートとフランク・キャプラ監督が組んだ。公開時はヒットしなかったが、著作権が切れてテレビで毎年流れるうちにクリスマスの定番になった", "rep": "「人生を肯定する映画」の代表で、アメリカ映画協会の『感動の映画100』で1位。前半の長さに戸惑う人もいるが、後半で前半のすべてが効いてくる構成が褒められる。甘すぎるという声もある一方、実はかなり暗い映画だという読み方も有名", "points": ["小さな住宅金融の会社を続けるジョージと、町を支配しようとする銀行家ポッターの対立", "取り付け騒ぎ（預金者が一斉にお金を返せと押し寄せる）の場面での演説", "天使が見せる「もしも」の世界"], "tips": "前半の約1時間はジョージの人生の積み重ね。退屈に感じても止めない。12月に見るのもいい", "after": "自分がいなかったら、周りの誰の人生がどう変わっていたか"}, "9": {"min": 89, "mood": "重め", "pre": "戦後すぐのローマ。俳優ではない素人を使い街でそのまま撮った（ネオレアリズモ）", "eye": "父と息子が並んで歩く場面。息子の目線で見る", "bg": "戦争に負けたあとの貧しいローマで、俳優ではない素人（主人公は工場労働者）を使い、セットではなく街中で撮った。こうした作り方を「ネオレアリズモ」と呼び、世界の映画に大きな影響を与えた", "rep": "映画史の教科書に必ず載る作品。派手な出来事は起きないのに、最後まで息が詰まるような緊張があると言われる。是枝裕和監督など、日本の監督にも影響を与えた", "points": ["仕事に必要な自転車を盗まれ、父と幼い息子がローマ中を探し回る1日", "息子ブルーノの目線。父を見る目が少しずつ変わる", "レストランの場面。貧しい親子と裕福な家族の対比"], "tips": "89分と短い。字幕で見る", "after": "追いつめられた人が正しくいられないとき、その人を責められるか"}, "10": {"min": 104, "mood": "ふつう", "pre": "戦後、4か国に分けて占領されたウィーンが舞台のサスペンス", "eye": "ずっと流れるツィターの音楽と、斜めに傾いた画面。観覧車の場面のセリフ", "bg": "戦後、アメリカ・イギリス・フランス・ソ連の4か国に分けて占領されたウィーンで実際にロケをした。脚本は作家グレアム・グリーン。音楽はロケ地で見つけたツィター奏者アントン・カラスの演奏", "rep": "フィルム・ノワール（影の多い犯罪映画）の最高峰の一つ。カンヌ国際映画祭の最高賞。光と影の撮影、傾いた画面、音楽が「完璧にかみ合った映画」と言われる。オーソン・ウェルズの登場場面は映画史に残る名登場", "points": ["暗い戸口に光が当たって顔が浮かぶ場面", "観覧車の上での会話（スイスの鳩時計のセリフ）", "ウィーンの下水道の追跡劇"], "tips": "画面の傾き（斜めの構図）に注目すると、世界が歪んでいる感じが伝わる", "after": "友情と正義がぶつかるとき、どちらを取るか"}, "12": {"min": 110, "mood": "ふつう", "pre": "ハリウッドの裏側の話。無声映画時代に忘れられた大女優の屋敷に、売れない脚本家が転がり込む", "eye": "冒頭のプールの場面から始まる語り方", "bg": "ビリー・ワイルダーがハリウッドの内側をハリウッドで描いた。往年の大女優ノーマ役のグロリア・スワンソンは、実際に無声映画時代の大スターだった。本物のサイレント映画の監督や俳優も出てくる", "rep": "ハリウッドが自分を皮肉った傑作として評価が高い。「私は大物よ。映画が小さくなったの」などの名セリフが有名。ブラックユーモアとホラーの間のような独特の空気が褒められる", "points": ["冒頭、死体が語り手になる始まり方", "ノーマの屋敷の異様な豪華さと、執事マックスの存在", "最後の階段の場面"], "tips": "『雨に唄えば』と同じ時代（無声からトーキーへ）を、片方は明るく片方は暗く描いている。続けて見ると面白い", "after": "過去の栄光にしがみつくことは、哀れなのか、それとも誇りなのか"}, "13": {"min": 103, "mood": "軽め", "pre": "無声映画からトーキーへ移るときのハリウッドの混乱を描くミュージカル", "eye": "雨の中で歌い踊る有名な場面。CGなしの体の動き", "bg": "1927年頃、映画に音が付き始めて、声の悪いスターが困った実話をもとにしたミュージカル。歌の多くは以前の映画の曲を集めて作った。ジーン・ケリーは高熱の中で雨の場面を撮ったと言われる", "rep": "「史上最高のミュージカル」の投票でほぼ必ず1位か2位。ミュージカルが苦手な人でも楽しめると言われる。CGなしの踊りの技術は今の目で見ても驚くという感想が多い", "points": ["『雨に唄えば』の場面。ただ嬉しくて雨の中で踊る", "ドナルド・オコナーが壁を駆け上がる『メイク・エム・ラフ』", "最初のトーキー試写会の大失敗（声と口がずれる）"], "tips": "ミュージカルは「歌の場面＝気持ちが言葉では収まらなくなった瞬間」と思うと見やすい", "after": "技術が変わると、それまでのスターや仕事はどうなるか（今のAIの話にもつながる）"}, "14": {"min": 86, "mood": "重め", "pre": "1940年、ドイツ軍から逃げる途中で親を失った少女と、農家の少年の話", "eye": "ギターのテーマ曲。子どもの『遊び』が大人の戦争とどう重なるか", "bg": "フランスの監督ルネ・クレマンの作品。1940年のフランスで、ドイツ軍の空襲で両親を失った5歳の少女ポーレットと、農家の少年ミシェルの話。ナルシソ・イエペスのギター曲が世界的に有名になった", "rep": "反戦映画の名作で、ヴェネツィア映画祭の最高賞とアカデミー名誉賞。戦争の場面は冒頭だけで、あとは子どもの遊びを通して死を描く。子役の自然な演技が驚異的と言われる。日本では特に人気が高い", "points": ["2人が始める「お墓づくり」という遊び", "大人たちの隣家同士のくだらない争い。戦争の縮図のように描かれる", "最後の場面の駅"], "tips": "86分と短いが、心にずっと残るタイプ。夜に見るなら少し覚悟して", "after": "子どもは死をどう理解しているか。大人はそれを守れているか"}, "15": {"min": 118, "mood": "軽め", "pre": "ある国の王女がローマで1日だけ抜け出す話。脚本は当時ハリウッドを追われていた人が偽名で書いた", "eye": "真実の口の場面。最後の記者会見の表情", "bg": "脚本を書いたダルトン・トランボは、共産主義者とされハリウッドを追放されていたため、友人の名前を借りて発表した（後にアカデミー賞が本人に返された）。オードリー・ヘプバーンはこれが初主演で、アカデミー主演女優賞", "rep": "日本で最も愛される洋画の一つ。軽い恋愛映画に見えて、最後の選択の苦さが大人の映画になっていると言われる。ローマの名所をほぼすべて実際に撮っていて、観光映画としても楽しめる", "points": ["王女が髪を切る場面と、スペイン広場のジェラート", "新聞記者ジョーが特ダネと気持ちの間で揺れる", "最後の記者会見。言葉にしないやりとり"], "tips": "白黒だが、それが気にならないほど明るい。何も考えずに楽しめる日に", "after": "1日だけ自由になれたら何をするか。立場と気持ち、どちらを取るか"}, "16": {"min": 112, "mood": "ふつう", "pre": "足を骨折して部屋から出られないカメラマンが、向かいのアパートをのぞき続ける。ほぼ部屋の中だけで進む", "eye": "見ている自分も『のぞき』の共犯になる感覚", "bg": "ヒッチコック監督の代表作。アパートの中庭を丸ごとスタジオに作った巨大なセットで撮った。カメラはほぼ主人公の部屋から出ない", "rep": "ヒッチコックの最高傑作候補。「映画を見ることは他人の生活をのぞくことだ」という、映画そのものについての映画として読まれる。グレース・ケリーの登場の仕方が美しいと有名", "points": ["中庭の向こうの窓一つ一つに別の人生がある（踊り子、作曲家、孤独な女性、新婚夫婦）", "見えているのに手が届かないもどかしさ", "グレース・ケリーが向かいの部屋に入る場面の緊張"], "tips": "ヒッチコックの入門に最適。ヒッチコック本人が一瞬出てくる（毎作のお約束）のを探すのも楽しい", "after": "他人をのぞくことはどこから悪になるか。SNSを見ている自分とどう違うか"}, "17": {"min": 108, "mood": "重め", "pre": "旅芸人の乱暴な男と、売られてきた素朴な娘のイタリアの旅", "eye": "ジェルソミーナの顔。ニーノ・ロータの音楽", "bg": "フェデリコ・フェリーニ監督が、妻ジュリエッタ・マシーナを主演に撮った。戦後イタリアの貧しい地方を回る旅芸人の話。音楽はのちに『ゴッドファーザー』も作るニーノ・ロータ", "rep": "アカデミー賞の外国語映画賞の第1回受賞作。ジェルソミーナの無垢な顔は「女性版チャップリン」と呼ばれた。乱暴者ザンパノの最後の場面で泣く人が多い", "points": ["綱渡り芸人『イル・マット』が石ころについて語る場面", "ジェルソミーナがラッパで吹くテーマ曲", "ザンパノという人物が最後にたどり着くところ"], "tips": "派手な展開はない。人物の表情を見る映画", "after": "役に立たないように見える人にも意味はあるか（石ころの話）"}, "18": {"min": 118, "mood": "ふつう", "pre": "父に愛されたい弟の話。旧約聖書のカインとアベルが下敷き。ジェームズ・ディーンの初主演作", "eye": "父と息子の誕生日の場面", "bg": "スタインベックの長い小説の後半部分を映画にした。ジェームズ・ディーンの初主演作で、彼は翌年、24歳で事故死した。出演は3本だけで、この作品が唯一生前に公開された主演作", "rep": "「父に認められたい息子」の物語の原型と言われる。ジェームズ・ディーンの不安定で繊細な演技が、それまでの映画の男性像を変えたと評価されている", "points": ["父の誕生日にお金を贈る場面", "兄アロンと弟キャルの違い", "母についての秘密"], "tips": "『理由なき反抗』と並ぶ青春映画の古典。親子の関係が気になる時期に見ると刺さる", "after": "親に愛されたいと思う気持ちは、大人になってからも消えるか"}, "19": {"min": 96, "mood": "ふつう", "pre": "陪審員12人が一つの部屋で有罪か無罪かを話し合う。ほぼ一部屋だけの会話劇", "eye": "11対1から一人ずつ考えが変わる理由。『ハドソン川の奇跡』の答えの出る問いに変える話と相性がいい", "bg": "もとはテレビドラマ。ヘンリー・フォンダが製作も兼ねた。撮影はほぼ1部屋で、上映時間と物語の中の時間がほぼ同じ。暑い夏の日で、部屋の扇風機が壊れている", "rep": "会話劇・法廷劇の最高峰で、法学部や企業研修でも使われる。セットは1部屋なのに、カメラの高さやレンズを少しずつ変えて、部屋がだんだん狭く息苦しくなるよう撮っていると有名", "points": ["陪審員たちは名前ではなく番号で呼ばれる。職業や性格が少しずつ分かっていく", "一人ずつ意見を変える理由がそれぞれ違う", "8番陪審員は「無罪だ」とは言わない。「話し合おう」と言う"], "tips": "96分。人物は12人だが、顔と席で覚えれば十分", "after": "確信がないとき、多数派に合わせるのは悪いことか。偏見は自分では気づけるか"}, "20": {"min": 161, "mood": "ふつう", "pre": "第二次世界大戦中、日本軍の捕虜になったイギリス兵がタイとビルマの間に鉄道橋を架けさせられる", "eye": "口笛のマーチ。誇りと任務がずれていく大佐", "bg": "フランスの作家ピエール・ブールの小説が原作。実際の泰緬鉄道（タイとビルマを結ぶ鉄道）建設が背景だが、話の多くは創作。スリランカで実物大の橋を建てて撮った。アカデミー賞7部門", "rep": "戦争映画の古典で、「戦争の狂気」を英国軍人の誇りという意外な角度から描いたと評価が高い。日本軍の描き方は史実と違うという指摘もある", "points": ["英国のニコルソン大佐と日本の斎藤大佐の意地の張り合い", "捕虜たちが口笛で吹く『クワイ河マーチ』", "最後の数分間"], "tips": "161分。前半は収容所、後半は橋の破壊作戦。二つの話が最後に合流する", "after": "良い仕事をすることと、その仕事が誰のためになるかは別の話か"}, "21": {"min": 128, "mood": "ふつう", "pre": "高い所が怖い元刑事が、ある女性の尾行を頼まれる。後の映画で真似された『めまいショット』が出てくる", "eye": "サンフランシスコの街と緑色の光の使い方", "bg": "ヒッチコックの作品。公開時は評価も興行もいまひとつだったが、のちに再評価され、2012年に英国の映画雑誌の投票で『市民ケーン』を抜いて1位になった", "rep": "「人は好きな人を自分の理想に作り変えようとする」という怖い話として読まれる。後半の展開には賛否があるが、それも含めて語られ続ける。カメラを引きながらズームする「めまいショット」は今もよく使われる", "points": ["サンフランシスコの坂道と尾行の場面", "緑色の光（ネオン）が意味するもの", "バーナード・ハーマンの渦を巻くような音楽"], "tips": "前半はゆっくり。後半の空気の変わり方を楽しむつもりで", "after": "人を好きになるとき、その人自身を見ているのか、自分の思い込みを見ているのか"}, "22": {"min": 212, "mood": "ふつう", "pre": "イエスと同じ時代のユダヤの貴族の復讐の物語。3時間半あり休憩つき", "eye": "CGなしの戦車競走の場面", "bg": "当時のハリウッドで最大の予算をかけた大作。戦車競走の場面だけで撮影に何週間もかかった。アカデミー賞11部門は、のちに『タイタニック』『ロード・オブ・ザ・リング王の帰還』と並ぶ最多記録", "rep": "スペクタクル（見せ物）映画の頂点。戦車競走は今でもアクション映画の手本と言われる。宗教色が強く、後半のキリストの話に戸惑う人もいる", "points": ["ガレー船を漕がされる奴隷の場面", "約10分の戦車競走", "幼なじみメッサラとの友情が憎しみに変わっていく"], "tips": "212分。休憩の画面で区切って2日に分けるのがおすすめ", "after": "復讐を果たしたら心は晴れるか"}, "23": {"min": 121, "mood": "軽め", "pre": "1929年のシカゴ、ギャングの殺しを見てしまった2人のバンドマンが女装して女性楽団に逃げ込むコメディ", "eye": "マリリン・モンロー。最後のひと言は映画史に残るオチ", "bg": "ビリー・ワイルダー監督。白黒なのは、女装の化粧がカラーだと不自然に見えるため。マリリン・モンローは撮影中セリフを覚えられず、同じ場面を何十回も撮り直したことで有名", "rep": "アメリカ映画協会の『最高のコメディ』で1位。下品にならずに性別やお金の話で笑わせる脚本の完成度が評価されている。最後のひと言は映画史で最も有名なオチの一つ", "points": ["ジャック・レモンが女装のまま富豪に求婚される流れ", "トニー・カーティスが金持ちのふりをする場面（話し方のまね）", "マリリン・モンローの歌う『I Wanna Be Loved by You』"], "tips": "テンポが速いので字幕を追うのに集中する。2時間笑っていられる", "after": "ありのままの自分を受け入れてもらえることの価値（最後のひと言の意味）"}, "24": {"min": 99, "mood": "ふつう", "pre": "トリュフォー監督の少年時代が下敷き。フランスのヌーヴェルヴァーグ（若い監督たちの新しい撮り方）の始まりの一本", "eye": "ラストの長い走りと、最後のカット", "bg": "フランソワ・トリュフォー監督が27歳で撮った長編デビュー作。主人公アントワーヌは監督自身の少年時代がもと。この役の俳優とは20年にわたって続編を撮り続けた", "rep": "フランスの「ヌーヴェルヴァーグ」（若い批評家出身の監督たちが、街中で身軽に撮った新しい映画）を代表する作品。カンヌで監督賞。説教くさくなく少年の目線に寄り添う描き方が評価されている", "points": ["学校と家のどちらにも居場所がない少年の日常", "少年鑑別所で心理士と話す場面（大人の声だけが聞こえる）", "海へ向かって走るラスト"], "tips": "派手な事件はない。少年の顔を見ていればいい", "after": "大人は子どものことを本当に分かっているか。自分が13歳の頃の居場所はどこだったか"}, "25": {"min": 109, "mood": "重め", "pre": "会社のお金を持ち逃げした女性がモーテルに泊まる。予告やあらすじを読まずに見るのがいちばん", "eye": "シャワーの場面の編集とバイオリンの音", "bg": "ヒッチコックがテレビ番組のスタッフを使って低予算で撮った。公開時、途中からの入場を禁止して話題にした。原作は実在の殺人犯をモデルにした小説", "rep": "現代ホラーとサスペンスの出発点。中盤の展開は、当時の観客には前代未聞の衝撃だったと言われる。シャワーの場面は約45秒に70以上のカットをつないでいる", "points": ["前半と後半で物語の性格が大きく変わる構成", "モーテルの管理人ノーマン・ベイツの話し方と剥製", "バイオリンだけの音楽"], "tips": "ネタバレが広まりきっている作品なので、検索せずに見る。白黒", "after": "普通に見える人の中に何があるか"}, "26": {"min": 125, "mood": "軽め", "pre": "出世のために自分の部屋を上司の浮気に貸す会社員の話。舞台は大企業の巨大なオフィス", "eye": "テニスのラケットでパスタの水を切るなど、小道具の使い方", "bg": "ビリー・ワイルダー監督。『お熱いのがお好き』の主演ジャック・レモンと再び組んだ。アカデミー作品賞。舞台の大企業のフロアは、遠近法を使って奥ほど小さいセットで広く見せている", "rep": "ロマンティック・コメディの最高傑作の一つ。笑えるのに、会社で出世するために自分を安売りする話としてかなり苦い。クリスマスから大晦日の話なので年末の定番", "points": ["何百もの机が並ぶオフィスの場面", "エレベーター係のフラン（シャーリー・マクレーン）の割れた手鏡", "最後のトランプの場面"], "tips": "会社員の話なので、就職や働き方を考えている今の時期に見るとリアルに感じる", "after": "出世と、自分が嫌いになることの交換は割に合うか"}, "27": {"min": 118, "mood": "ふつう", "pre": "金持ちの友人を連れ戻しに来た貧しい青年が、イタリアの海で入れ替わりを考え始める", "eye": "アラン・ドロンの目と地中海の光", "bg": "原作はパトリシア・ハイスミスの小説『才能あるリプリー氏』。アラン・ドロンはこの作品で世界的なスターになった。1999年に『リプリー』としてリメイクされている", "rep": "フランスのサスペンスの名作で、地中海の強い光と青い海の撮影が美しいと評価が高い。主人公への共感と嫌悪が混ざる不思議な後味が語られる。日本では特に人気", "points": ["貧しい青年トムが金持ちフィリップのサインを練習する場面", "ヨットの上の3人の関係", "ニーノ・ロータの音楽と、最後の場面"], "tips": "主人公の目線で進むので、自分がどこまで彼を応援しているかを意識しながら見ると怖い", "after": "人の人生がうらやましくなったとき、それを奪うことと目指すことの違い"}, "28": {"min": 115, "mood": "軽め", "pre": "ニューヨークの自由に生きる女性ホリーの話。原作のカポーティとは結末が違う", "eye": "冒頭の朝のティファニー前と『ムーン・リバー』。日本人の描き方は今見ると差別的なので、そこは時代の古さとして", "bg": "原作はトルーマン・カポーティの小説で、カポーティはマリリン・モンローを主演に望んでいた。オードリー・ヘプバーンの黒いドレスとサングラスは、今もファッションの定番として真似される", "rep": "おしゃれ映画の代表として人気が高い。一方、日本人の隣人ユニオシを白人俳優が出っ歯の化粧で演じる場面は、典型的な差別表現として強く批判されている。原作よりずっと甘い結末に変えられている", "points": ["朝のティファニーの前でパンを食べる冒頭", "窓辺でギターを弾きながら歌う『ムーン・リバー』", "名前のない猫"], "tips": "ユニオシの場面は時代の問題として受け止めて、それ以外を楽しむ見方が一般的", "after": "自由でいたいことと、誰かのものになるのが怖いことは同じか"}, "30": {"min": 227, "mood": "ふつう", "pre": "第一次世界大戦中、アラブの部族をまとめてトルコと戦ったイギリス人将校の実話。4時間近くあり休憩つき", "eye": "砂漠の撮り方。マッチの火から砂漠の朝日に切り替わる場面", "bg": "実在のイギリス軍将校T・E・ロレンスが、第一次世界大戦中にアラブの部族をまとめてオスマン帝国（今のトルコ）と戦った話。ヨルダンなどの本物の砂漠で1年以上かけて撮影した。主演のピーター・オトゥールはほぼ無名だった", "rep": "スピルバーグなど多くの監督が「映画を作りたいと思ったきっかけ」に挙げる作品。砂漠を横長の大画面いっぱいに使う映像は、スマホでは魅力が半分になるとよく言われる。英雄の話に見えて、自分が何者か分からなくなっていく男の話でもある", "points": ["地平線の蜃気楼の中から人が近づいてくる、長い長い登場の場面", "マッチの火を吹き消すと砂漠の朝日に切り替わるつなぎ", "ロレンスが自分の力に酔い、壊れていく後半"], "tips": "227分。休憩の画面で2日に分ける。できればスマホではなくテレビかPCの大きい画面で", "after": "よそ者がその土地の人を率いるとき、本当に彼らのために戦っているのか"}, "31": {"min": 129, "mood": "ふつう", "pre": "1930年代のアメリカ南部、黒人の男性の弁護を引き受けた弁護士の父を、幼い娘の目から描く", "eye": "法廷の場面と、子どもたちが見ていた近所の家の謎", "bg": "ハーパー・リーのピューリッツァー賞小説が原作。1930年代のアラバマ州の小さな町で、白人女性への暴行の罪を着せられた黒人男性を、弁護士アティカス・フィンチが弁護する。物語は6歳の娘スカウトの目で語られる", "rep": "アメリカ映画協会の『最高のヒーロー』で、グレゴリー・ペックが演じたアティカスが1位（2位以下はインディ・ジョーンズなど）。正義を大声で叫ばず静かに貫く父親像が評価されている。一方、黒人の登場人物が白人の英雄を引き立てる役になっているという今の視点からの批判もある", "points": ["法廷の場面。2階の黒人席から見守る人々", "子どもたちが怖がる近所の家の住人『ブー』", "アティカスが子どもに語る『相手の靴を履いて歩いてみる』という教え"], "tips": "前半は子どもの夏休みの話でゆっくり。後半の裁判とつながっていく", "after": "周りの全員が間違っていると分かっているとき、一人でも正しくいられるか"}, "32": {"min": 172, "mood": "軽め", "pre": "第二次世界大戦中、ドイツの捕虜収容所から250人で脱走する計画。実話がもと", "eye": "トンネル掘りの段取りの面白さと、スティーブ・マックイーンのバイク", "bg": "第二次世界大戦中、ドイツの捕虜収容所から連合軍の兵士76人が実際に脱走した事件がもと。原作は収容所にいた元捕虜ポール・ブリックヒルの本。オートバイの場面のスタントはスティーブ・マックイーン本人が一部演じた", "rep": "「男たちが力を合わせて何かを成し遂げる」映画の代表で、テンポがよく長さを感じないと評判。前半の準備の段取りの面白さはチーム物の手本と言われる。マーチのテーマ曲も有名", "points": ["掘る係・偽造係・調達係など、得意分野ごとに役割を分ける脱走チーム", "土を隠す方法などのアイデア", "マックイーンが独房でキャッチボールする場面とバイクの逃走"], "tips": "172分あるが軽く見られる。前半（準備）と後半（脱走）で分けてもいい", "after": "チームで大きなことをするとき、一人ひとりの得意をどう生かすか"}, "33": {"min": 95, "mood": "ふつう", "pre": "冷戦の核戦争をネタにした真っ黒なコメディ。ピーター・セラーズが1人で3役", "eye": "作戦室の会話のかみ合わなさ。笑える分だけ怖い", "bg": "スタンリー・キューブリック監督。冷戦中で、本当に核戦争が起きるかもしれないと思われていた1964年に、核戦争をコメディにした。最初はまじめな映画として企画されたが、途中から笑いにしたほうが怖さが伝わると考えを変えた", "rep": "政治風刺コメディの最高傑作。ピーター・セラーズが大統領、イギリス人将校、ストレンジラヴ博士の3役を演じ分けている。笑っているうちに背筋が冷える映画と言われる", "points": ["作戦室の『ここで喧嘩するな、ここは作戦室だぞ』", "勝手に核攻撃を命じた将軍の妄想", "爆撃機の乗組員たちの真剣さ"], "tips": "白黒・95分。原題は長いので有名（『または私は如何にして心配するのを止めて水爆を愛するようになったか』）", "after": "仕組みが自動で動き出したら人間は止められるか。今のAIの話にも重なる"}, "34": {"min": 170, "mood": "軽め", "pre": "言語学の教授が、下町なまりの花売り娘を上流の令嬢に仕立てられるか賭ける。休憩つきのミュージカル", "eye": "発音練習の場面と競馬場の場面の衣装", "bg": "バーナード・ショーの戯曲『ピグマリオン』をもとにした舞台ミュージカルの映画化。舞台ではジュリー・アンドリュースが主演だったが、映画では知名度の高いオードリー・ヘプバーンが選ばれ、歌の大部分は別の歌手の吹き替えになった。アカデミー作品賞", "rep": "衣装とセットの豪華さは映画史屈指。一方、教授が娘を「作品」のように扱う関係や結末には、今の目で見ると違和感があるという声が多い", "points": ["発音練習『スペインの雨』がようやく言えた瞬間の歌", "アスコット競馬場の白と黒の衣装の場面", "教授ヒギンズとイライザの、最後まで対等にならない関係"], "tips": "170分・休憩つき。前半で止めてもいい", "after": "話し方や見た目を変えると、人の中身は変わるのか。周りの扱いだけが変わるのか"}, "36": {"min": 106, "mood": "ふつう", "pre": "大学を出たばかりで何をしたいか分からない青年の話。サイモン&ガーファンクルの曲が流れ続ける", "eye": "ラストの数十秒の2人の表情", "bg": "マイク・ニコルズ監督。主演のダスティン・ホフマンは当時30歳で、それまでの二枚目スターとは違う普通っぽい見た目だったことが話題になった。音楽はサイモン&ガーファンクルの曲を使い、『サウンド・オブ・サイレンス』は映画とともに大ヒット", "rep": "1960年代後半の「アメリカン・ニューシネマ」（若者の不安や反抗を描く新しい映画）の始まりの一本。親世代の価値観に従いたくないけど、自分が何をしたいかも分からない若者の姿が、今の学生にも通じると言われる", "points": ["プールの底に沈んで動かないベンジャミン", "年上の女性ミセス・ロビンソンとの関係", "最後のバスの中の2人の顔"], "tips": "ラストは「ハッピーエンド」かどうか、見た人によって意見が分かれる。そこを自分で決めながら見る", "after": "将来の道が決まっていないとき、とりあえず誰かの期待に乗るか、乗らないか"}, "37": {"min": 111, "mood": "重め", "pre": "1930年代の実在の強盗カップル。それまでのハリウッドが描かなかった暴力を正面から出した", "eye": "最後の場面の撮り方", "bg": "1930年代に銀行強盗を繰り返した実在のカップル、ボニーとクライドの話。それまでのハリウッドには暴力描写の自主規制があり、この映画はそれを破った作品として知られる", "rep": "アメリカン・ニューシネマの出発点。犯罪者を若者の反抗の英雄のように描いたことは、公開当時は激しく批判された。最後の場面は映画史上最も衝撃的な結末の一つと言われる", "points": ["退屈な町からクライドに連れ出されるボニーの顔", "仲間を集めて『バロウ・ギャング』になっていく軽さ", "最後の場面の編集"], "tips": "前半は軽快なカントリー音楽で楽しい。だんだん空気が変わっていくのを感じながら", "after": "退屈から抜け出すために悪いことをするのは、どこまで分かってしまえるか"}, "38": {"min": 149, "mood": "ふつう", "pre": "セリフが少なく説明もほとんどない。分からなくても大丈夫な映画。休憩と、冒頭と途中に真っ暗な音楽だけの時間がある", "eye": "骨が宇宙船に変わるつなぎ。1968年のCGなしの宇宙の映像", "bg": "キューブリック監督とSF作家アーサー・C・クラークが一緒に作った。人類が月に行く前年の1968年公開だが、宇宙の描写がその後の実際の映像と比べても正確だと言われる。CGはなく、模型と特殊な撮影ですべて作った", "rep": "SF映画の最高峰で、英国の映画雑誌の監督投票では1位になったこともある。説明をほとんどしないので「意味が分からない」という感想も多いが、それも含めて「体験する映画」と言われる。コンピューター『HAL 9000』は今のAIの話でよく引用される", "points": ["猿人が骨を道具として使うことを知る『人類の夜明け』", "コンピューターHALの静かな声", "最後の『木星 そして無限の彼方へ』の光の洪水"], "tips": "意味を理解しようとしないで、音と映像に身をまかせる。暗い部屋で見る。解説は見たあとに読む", "after": "道具を手に入れた人類はどこへ向かうのか。AIが人間に逆らうとしたら、その理由は何か"}, "41": {"min": 95, "mood": "ふつう", "pre": "2人の若者がバイクでアメリカを横断する。1960年代末の自由と保守の衝突", "eye": "当時のロックの使い方とアメリカの風景", "bg": "デニス・ホッパーが監督・出演、ピーター・フォンダが製作・出演した低予算映画。撮影中、出演者が本当に酒や薬物を使っていた場面もあると言われる。大ヒットし、ハリウッドが若い作り手に予算を出すきっかけになった", "rep": "アメリカン・ニューシネマの象徴。ステッペンウルフの『ワイルドでいこう！』など、当時のロックを映画にそのまま使ったのも新しかった。物語より空気を味わう映画で、退屈と感じる人もいる", "points": ["バイクで走るアメリカ南西部の大地", "ジャック・ニコルソン演じる弁護士との焚き火の会話（自由についての話）", "南部の町で向けられる敵意"], "tips": "話の筋は単純。音楽と景色と時代の空気を楽しむつもりで", "after": "自由を語る人と、自由に生きる人を、なぜ周りは恐れるのか"}, "42": {"min": 136, "mood": "重め", "pre": "暴力の場面が多くきつい。悪い若者を治療で『善く』変えてよいかという問いの映画", "eye": "ベートーヴェンの使い方と未来の言葉づかい", "bg": "アンソニー・バージェスの小説が原作。主人公アレックスは暴力を楽しむ不良少年で、刑務所から早く出るために、暴力を見ると吐き気がするよう脳を条件づける治療を受ける。公開後イギリスで模倣犯の報道があり、監督の意向で長く上映が止められていた", "rep": "映画史で最も議論を呼んだ作品の一つ。暴力の場面は今見てもきつい。ただ映画の問いは「悪を自分で選べない人間は善と言えるのか」という哲学的なもので、その問いの鋭さが評価されている", "points": ["アレックスたちが使う、ロシア語混じりの造語の話し方", "『ルドヴィコ療法』の場面。目を閉じられない装置", "ベートーヴェンの第九と『雨に唄えば』の使い方"], "tips": "暴力・性暴力の場面がある。気分が沈んでいる日は避ける", "after": "社会が人を治療で『いい人』に変えることは許されるか"}, "43": {"min": 175, "mood": "重め", "pre": "マフィアの一家の話。続編のPART IIとセットで見るのがおすすめ", "eye": "冒頭の結婚式で人物の関係が全部紹介される。名前を覚えなくても顔で追えば大丈夫", "bg": "マリオ・プーゾのベストセラー小説が原作。監督のフランシス・フォード・コッポラは当時30代前半で、スタジオとキャスティングでもめ続けた（マーロン・ブランドもアル・パチーノも反対された）。アカデミー作品賞", "rep": "多くの映画ランキングで1位か上位。「家族の話としてのマフィア映画」の原型で、権力がどう受け継がれるかを描いた作品と言われる。アル・パチーノ演じる三男マイケルが変わっていく過程が中心", "points": ["冒頭、娘の結婚式の日に頼み事を聞くドン・コルレオーネ", "レストランの場面。マイケルが一線を越える瞬間", "洗礼式の場面の音楽と映像の重ね方"], "tips": "175分。人物が多いが、最初の結婚式でだいたい紹介される。家族の顔（長男ソニー・次男フレド・三男マイケル・養子のトム）だけ覚えれば迷わない。PART IIはできれば1週間以内に", "after": "家族を守ることと、家族のために自分が変わってしまうこと"}, "44": {"min": 129, "mood": "軽め", "pre": "1930年代のシカゴ、詐欺師2人が大物をだます。章ごとに題が出る", "eye": "最後まで気を抜かずに見る。ラグタイムの音楽", "bg": "1930年代のシカゴ、仲間を殺された若い詐欺師（ロバート・レッドフォード）が、伝説の詐欺師（ポール・ニューマン）と組んで大物ギャングに大仕掛けをかける。2人の共演は『明日に向って撃て！』に続いて2回目。アカデミー作品賞", "rep": "「だまされる快感」を味わえる娯楽映画の代表。章ごとに題が出る作りや、スコット・ジョプリンのラグタイム音楽が洒落ていると評価されている。脚本の伏線の回収のうまさがよく褒められる", "points": ["列車のポーカーの場面", "大勢の詐欺師が協力して作る『偽の場外馬券場』", "最後の場面"], "tips": "ネタバレを見ないで行く。誰が誰をだましているか、半分疑いながら見る", "after": "相手の欲を利用することと、相手をだますことの違い"}, "45": {"min": 122, "mood": "重め", "pre": "少女に取りついた悪魔と神父の話。今のホラーの原型。夜に1人で見るかは選んで", "eye": "母親と医者が何度も科学で説明しようとする前半", "bg": "ウィリアム・ピーター・ブラッティの小説が原作。公開時、気分を悪くして倒れる観客が出たと報道され、社会現象になった。ホラー映画として初めてアカデミー作品賞にノミネートされた", "rep": "史上最も怖い映画の投票で常に上位。驚かせる場面よりも、医者や科学で説明しようとしてもできない前半の積み重ねが怖いと言われる。母親と神父カラスの苦しみの話として見る人も多い", "points": ["少女リーガンの検査の場面。医学が手詰まりになっていく過程", "信仰を失いかけた神父カラスの話", "階段の場面と、テーマ曲『チューブラー・ベルズ』"], "tips": "怖いのが苦手なら昼間に。ディレクターズ・カット版は追加場面がある", "after": "科学で説明できないことに出会ったとき、人は何にすがるか"}, "46": {"min": 202, "mood": "重め", "pre": "1作目の続き。マイケルの今と、若い頃の父ヴィトの話が交互に進む。1作目の直後に見る", "eye": "父と息子が同じ年頃に何を選んだかの比べ方", "bg": "1作目の続きと、父ヴィト・コルレオーネの若い頃（ロバート・デ・ニーロ）の話が交互に進む。続編として初めてアカデミー作品賞を取った。デ・ニーロはほぼイタリア語のセリフで助演男優賞", "rep": "「1作目を超えた唯一の続編」と言われることが多い。父が家族を作っていく話と、息子が家族を壊していく話を並べた構成が絶賛されている。1作目より暗くて重い", "points": ["移民としてニューヨークに着いた少年ヴィトとエリス島の場面", "キューバ革命の前夜のハバナ", "湖の家の場面"], "tips": "202分。1作目の直後に見る。前半と後半で分けてもいい", "after": "同じように家族のためと言いながら、父と息子はどこで分かれたのか"}, "47": {"min": 130, "mood": "重め", "pre": "1930年代のロサンゼルスで水の利権をめぐる事件を追う探偵もの", "eye": "水という地味な題材がどこまで大きな話になるか", "bg": "ロマン・ポランスキー監督。1930年代のロサンゼルスで実際にあった水の利権争いが下敷き。脚本ロバート・タウンはアカデミー脚本賞を受け、この脚本は脚本術の教科書によく使われる", "rep": "1970年代のフィルム・ノワールの最高傑作。探偵ジェイク（ジャック・ニコルソン）が調べるほど真相が大きくなる構成がうまいと言われる。結末は非常に苦い", "points": ["浮気調査のはずが、市の水道の陰謀につながっていく", "ジェイクの鼻のけが", "最後のセリフ『忘れろ、ジェイク。ここはチャイナタウンだ』"], "tips": "伏線が多いので、一度止めて「今わかっていること」を整理しながら見てもいい", "after": "真実を明らかにすることが、必ず人を救うとは限らないのか"}, "48": {"min": 133, "mood": "重め", "pre": "刑務所の労働を逃れるため精神病院に入った男と、規則で患者を管理する看護師長", "eye": "看護師長は怒鳴らない。静かな支配の怖さ", "bg": "ケン・キージーの小説が原作。刑務所の労働を逃れるため精神病だと装った男マクマーフィーが、精神病院に入る。実際の州立精神病院で、本物の患者やスタッフも出演して撮った。アカデミー賞の主要5部門（作品・監督・主演男優・主演女優・脚本）を独占した", "rep": "「管理する側と自由でいたい側」の話の代表。ジャック・ニコルソンの代表作。悪役とされる看護師長ラチェッドは声を荒げず、規則と善意の顔で人を支配するところが怖いと評価されている", "points": ["テレビで野球を見たいという投票の場面", "患者たちを連れ出す釣り旅行", "チーフ（大柄な先住民の患者）とマクマーフィーの関係"], "tips": "笑える前半から、後半で一気に重くなる", "after": "規則に従うことは、患者（人）を守っているのか、管理しやすくしているだけか"}, "49": {"min": 124, "mood": "ふつう", "pre": "夏の海水浴場にサメが出る。撮影中サメの模型がよく壊れたので、サメをあまり見せない撮り方になった", "eye": "2音だけのテーマ曲。見せないことで怖がらせる工夫", "bg": "スピルバーグ監督が28歳で撮った。機械仕掛けのサメ（スタッフは『ブルース』と呼んだ）が海水で何度も壊れたため、サメを見せずに怖がらせる演出を工夫した。夏休みの大作映画（ブロックバスター）の始まりと言われる", "rep": "サスペンスの教科書。音楽（2音の繰り返し）だけで怖さを作る手法は今も真似される。後半は3人の男の船の上の話になり、そこがいちばん面白いという人も多い", "points": ["海の中から見上げるカメラ（サメの目線）", "船の上で傷跡を見せ合う夜の場面と、インディアナポリス号の話", "観光の町の市長が海を閉めたがらない理由"], "tips": "怖いけれど血みどろではない。気軽に見られる", "after": "危険が分かっていても、お金のために目をつぶるのはなぜか"}, "50": {"min": 114, "mood": "重め", "pre": "ベトナム帰りで眠れない男が夜のニューヨークでタクシーを運転する。孤独がだんだん危うくなる", "eye": "鏡の前の『俺に言ってるのか？』。サックスの音楽", "bg": "スコセッシ監督、脚本ポール・シュレイダー、主演ロバート・デ・ニーロ。シュレイダー自身が孤独で眠れなかった時期の経験がもとになっている。カンヌ国際映画祭の最高賞。12歳の少女役のジョディ・フォスターも高く評価された", "rep": "1970年代のニューヨークの汚さと、都会の孤独を描いた傑作。主人公トラヴィスは共感してはいけない人物なのに、気持ちが分かってしまう怖さがある。のちの『ジョーカー』は明らかにこの映画を下敷きにしている", "points": ["夜のタクシーから見る街。蒸気とネオン", "デートで成人映画に連れて行ってしまう場面（人との距離が分からない）", "鏡に向かって話す場面"], "tips": "『ジョーカー』（#111）と見比べると面白い。どちらを先に見てもいい", "after": "孤独な人が『世の中を正す』と思い始めるのは、どこからが危ないのか"}, "51": {"min": 119, "mood": "軽め", "pre": "三流ボクサーが世界チャンピオンとの試合の機会をもらう。無名だったスタローンが自分で脚本を書いた", "eye": "朝の練習と階段を駆け上がる場面。勝ち負けより何を目指しているか", "bg": "ほとんど無名だったシルヴェスター・スタローンが3日で脚本を書き、主演させてくれないなら脚本は売らないと粘った。低予算で28日ほどで撮影し、アカデミー作品賞を取った。スタローン自身の売れない俳優生活が重なる", "rep": "スポーツ映画の原点で、続編がたくさん作られた。1作目はアクションより、さえない男が自分を信じ直す話として評価されている。恋人エイドリアンとの不器用な恋も人気", "points": ["生卵を飲んで朝の街を走る練習", "フィラデルフィア美術館の階段", "試合前夜にロッキーが語る、本当の目標"], "tips": "続編のイメージで見ると意外なほど地味で静か。そこがいい", "after": "勝つことより大事なゴールを、自分で決められるか"}, "53": {"min": 93, "mood": "軽め", "pre": "ニューヨークのコメディアンの恋の始まりから終わりまで。観客に話しかけたり時間が飛んだりする自由な作り", "eye": "字幕に本音が出る会話の場面", "bg": "ウディ・アレンが監督・脚本・主演。主人公は神経質なニューヨークのコメディアンで、相手役ダイアン・キートンとは実際に恋人だった時期がある。アカデミー作品賞（『スター・ウォーズ』を破った）。なお、ウディ・アレンには家族への性的虐待の告発があり、今は作品をどう見るかが議論になっている", "rep": "現代の恋愛コメディの形を作った作品。カメラに向かって話しかける、字幕で本音が出る、過去の場面に大人のまま入っていくなど、自由な語り方が新しかった。会話の量がとても多い", "points": ["映画館の列で、マーシャル・マクルーハン本人が登場する場面", "会話の字幕に心の声が出る場面", "ロブスターを料理する場面"], "tips": "字幕を読むのが忙しい。会話劇が好きなら最高、苦手なら合わないかも", "after": "うまくいかなかった恋は失敗だったのか"}, "54": {"min": 183, "mood": "重め", "pre": "ペンシルベニアの製鉄の町の若者3人がベトナム戦争へ。前半の1時間は結婚式で戦争は出てこない", "eye": "長い結婚式が後半を重くするための土台になっている", "bg": "マイケル・チミノ監督。ペンシルベニアの製鉄所の町で育ったロシア系移民の若者3人が、ベトナム戦争に行き、帰ってくる。アカデミー作品賞。メリル・ストリープの初期の出演作", "rep": "戦争そのものより、戦争が町と友情をどう壊すかを描いた作品と言われる。前半の長い結婚式に驚く人が多いが、それがあるから後半が重くなると評価されている。ロシアンルーレットの場面は史実に基づかないという批判もある", "points": ["約1時間の結婚式と鹿狩り", "捕虜収容所の場面", "最後の食卓で歌われる歌"], "tips": "183分。結婚式の後（戦場へ行くところ）で区切ってもいい。精神的にかなり重い", "after": "戦争から帰ってきても、元の自分に戻れないのはなぜか"}, "55": {"min": 147, "mood": "重め", "pre": "ベトナム戦争中、川をさかのぼって軍の命令に背いた大佐を探しに行く。版によって長さが違う（長い版は3時間超）", "eye": "ヘリの攻撃とワーグナー。奥へ進むほど現実感が薄れていく", "bg": "コッポラ監督。ジョゼフ・コンラッドの小説『闇の奥』を、ベトナム戦争に置き換えた。フィリピンでの撮影は台風でセットが壊れ、主演が心臓発作で倒れるなど大混乱し、予定の何倍もの期間がかかった。そのドキュメンタリー映画もある", "rep": "戦争映画の最高傑作の一つ。カンヌの最高賞。前半の圧倒的な戦闘と、後半の夢のような（悪夢のような）展開の落差が語られる。後半は分かりにくいと言われることも多い", "points": ["ワーグナーの『ワルキューレの騎行』を流しながらのヘリ攻撃", "『朝のナパームの匂いは格別だ』のキルゴア中佐", "川を上るほど文明から遠ざかっていく感覚"], "tips": "配信によって劇場公開版・特別完全版・ファイナル・カットがある。最初は劇場公開版（147分）かファイナル・カット（183分）", "after": "戦争の中で正気を保つことに意味はあるか"}, "57": {"min": 144, "mood": "重め", "pre": "冬の間閉ざされる山のホテルの管理人一家。版によって119分と144分がある", "eye": "左右対称の画面と、三輪車で廊下を進む場面の音", "bg": "スティーヴン・キングの小説をキューブリックが映画化した。キングはこの映画化が気に入らず、公然と批判した。撮影には1年近くかかり、ある場面は100回以上撮り直したと言われる。カメラを滑らかに動かす『ステディカム』をいち早く使った", "rep": "ホラーの古典で、解釈が無数にある映画。驚かせるより、じわじわと不安にさせる作り。ジャック・ニコルソンの演技は大げさすぎるという声と、だから怖いという声がある", "points": ["山道を走る車を空から追う冒頭", "三輪車で廊下を回る息子ダニー（床の音が絨毯で変わる）", "ホテルの間取りが少しおかしい（ありえない窓など）"], "tips": "配信版の長さ（119分か144分）を確認。どちらでも話は分かる", "after": "閉じ込められた家族が壊れていくとき、本当に怖いのは幽霊か、人間か"}, "58": {"min": 129, "mood": "重め", "pre": "実在のボクサー、ジェイク・ラモッタの白黒の伝記映画。主人公は好きになれない人として描かれる", "eye": "デ・ニーロが役のため体重を大きく増減させた。試合場面の音", "bg": "元ミドル級世界チャンピオン、ジェイク・ラモッタの自伝が原作。デ・ニーロがスコセッシに映画化を勧めた。デ・ニーロは現役時代を演じるため実際にボクシングの試合に出られるほど鍛え、引退後の姿のために約27kg太った。アカデミー主演男優賞", "rep": "1980年代のアメリカ映画のベストに選ばれることが多い。ボクシング映画というより、嫉妬と暴力で周りの人をすべて失っていく男の話。試合場面のスローモーションと音の使い方が革新的と評価されている", "points": ["白黒の映像の中の試合（フラッシュの音、リングの広さが毎回変わる）", "弟ジョーイ（ジョー・ペシ）との関係", "最後の楽屋の鏡の前の場面"], "tips": "主人公はひどい人として描かれる。共感しようとしなくていい", "after": "自分を一番傷つけているのは誰か"}, "59": {"min": 115, "mood": "軽め", "pre": "1936年、考古学者インディ・ジョーンズがナチスより先に聖櫃を探す冒険もの", "eye": "冒頭の大玉の場面から休みなく続く展開", "bg": "ジョージ・ルーカスが原案、スピルバーグが監督。1930〜40年代の連続活劇（毎週続きを上映した冒険映画）へのオマージュとして作られた。主役インディ・ジョーンズは当初トム・セレックの予定だった。ハリソン・フォードが剣の達人を銃で撃つ場面は、撮影時に体調が悪くて即興で変えたと言われる", "rep": "冒険映画の決定版。冒頭から最後まで見せ場が途切れない構成が褒められる。考古学者なのにやることが乱暴、というツッコミも含めて愛されている", "points": ["冒頭の遺跡で大玉に追われる場面", "ヘビが苦手な主人公が蛇の穴に入る", "トラックの追跡（下にもぐって前から後ろへ移る）"], "tips": "何も考えずに楽しめる。シリーズは全5作あるが、1作目だけで完結している", "after": "（考えなくていい映画。強いて言えば、宝物は博物館に置くべきか）"}, "60": {"min": 115, "mood": "軽め", "pre": "郊外の少年が置き去りにされた宇宙人をかくまう。大人の顔がほとんど映らない撮り方", "eye": "子どもの目の高さのカメラと、自転車の場面", "bg": "スピルバーグ監督。両親が離婚した自分の子ども時代の寂しさがもとになっている。子役の自然な演技を引き出すため、ほぼ物語の順番どおりに撮影した。公開後、長く世界の興行収入1位だった", "rep": "子どもの目線で撮った映画の代表。大人の顔をほとんど映さず（鍵束をつけた腰などで見せる）、子どもの世界を守る撮り方が評価されている。ジョン・ウィリアムズの音楽も有名", "points": ["E.T.とエリオットが同じ感覚を共有する場面", "家の中に隠すためのぬいぐるみの棚", "月を背に自転車が飛ぶ場面"], "tips": "子ども向けと思わずに。家族の欠けた家の話でもある", "after": "友だちと別れるとき、相手のためを思うとはどういうことか"}, "61": {"min": 117, "mood": "ふつう", "pre": "2019年のロサンゼルス、人間そっくりの人造人間を追う捜査官。版がいくつもあり、配信は『ファイナル・カット』が多い", "eye": "雨とネオンの街。最後の屋上の場面のセリフ", "bg": "フィリップ・K・ディックの小説『アンドロイドは電気羊の夢を見るか？』が原作。リドリー・スコット監督。公開時はヒットせず、後からカルト的人気になった。製作側が付けたナレーションと明るい結末を外した『ディレクターズ・カット』『ファイナル・カット』が後に作られた", "rep": "SFの見た目（雨、ネオン、日本語の看板、巨大広告）を決定づけた作品。「人間らしさとは何か」を問う映画として哲学の授業でも使われる。話はゆっくりで、雰囲気に浸れるかどうかで好みが分かれる", "points": ["人間かどうかを判定する『フォークト=カンプフ検査』", "日本風の屋台やネオンが並ぶ2019年のロサンゼルス", "最後の屋上の場面の独白（『雨の中の涙のように』）"], "tips": "『ファイナル・カット』で見るのがおすすめ。ヴァンゲリスの音楽と一緒に夜に", "after": "記憶が作られたものでも、その人の人生は本物と言えるか"}, "62": {"min": 108, "mood": "ふつう", "pre": "未来から来た殺人ロボットが1人の女性を狙う。低予算で作られた1作目。続編の『2』はこの後に", "eye": "低予算を工夫で見せる追いかけっこ", "bg": "ジェームズ・キャメロン監督が、熱を出したときに見た夢（炎の中から金属の骨格が現れる）から思いついたと言われる。予算は約640万ドルと小さく、工夫で見せた。アーノルド・シュワルツェネッガーの悪役はセリフが少ないことで逆に迫力が出た", "rep": "低予算SFアクションの傑作。ホラー映画に近い怖さがある。続編の『2』のほうが有名だが、1作目の方が好きという人も多い。主人公サラ・コナーがただの店員から変わっていく話でもある", "points": ["『I'll be back』", "警察署の場面", "未来から来た兵士カイルが語る未来の世界"], "tips": "1980年代の特撮で、今見ると粗い場面もある。そこも味として", "after": "未来が決まっていると知ったら、人は運命に従うか抗うか"}, "63": {"min": 160, "mood": "ふつう", "pre": "モーツァルトを、同じ時代の宮廷作曲家サリエリの嫉妬の目から描く。史実そのままではない", "eye": "サリエリが楽譜を読んで震える場面。天才を分かってしまう凡人の苦しさ", "bg": "ピーター・シェーファーの舞台劇が原作。実際のサリエリがモーツァルトを毒殺したという噂は史実ではなく、映画は創作。チェコのプラハで撮影した。アカデミー賞8部門", "rep": "嫉妬を描いた映画の最高傑作の一つ。天才を誰よりも理解できるのに、自分は凡人だと知ってしまったサリエリの苦しみに、多くの人が自分を重ねる。音楽映画としても豪華", "points": ["サリエリがモーツァルトの楽譜を初めて読む場面（書き直しの跡がない）", "モーツァルトの甲高い笑い声", "病床でモーツァルトがサリエリに『レクイエム』を書き取らせる場面"], "tips": "ディレクターズ・カット（180分）もある。最初は劇場版（160分）で十分", "after": "自分より才能のある人を見たとき、どう向き合うか。凡人であることは不幸か"}, "64": {"min": 116, "mood": "軽め", "pre": "高校生が1955年にタイムスリップし、若い頃の両親に会ってしまう", "eye": "前半に出てきた小さなものが後半ぜんぶ回収される脚本", "bg": "脚本のボブ・ゲイルが、父親の高校の卒業アルバムを見て『もし同級生だったら友だちになれたか』と考えたのがきっかけ。主役のマーティは当初別の俳優で撮影が進んでいたが、数週間後にマイケル・J・フォックスに交代した", "rep": "「脚本の手本」として脚本講座でよく教えられる。前半に出たセリフや小道具が後半ですべて意味を持つ。笑えて、ハラハラして、最後は気持ちいい、という娯楽の満点に近い評価", "points": ["時計台のチラシ（前半で手に入れる）", "1955年の両親の意外な姿", "ダンスパーティーの『ジョニー・B.グッド』"], "tips": "伏線の映画なので、前半を流し見しない。3部作だが1作目で話は完結している", "after": "親にも自分と同じ年齢だった頃があったと想像したことがあるか"}, "65": {"min": 89, "mood": "ふつう", "pre": "1959年のオレゴンの田舎、12歳の少年4人が線路を歩いて死体を探しに行く夏の2日間。原作はスティーヴン・キング", "eye": "焚き火の夜の会話と、大人になった語り手の最後の一文", "bg": "スティーヴン・キングの短編『The Body』が原作（キングのホラーではない作品）。ロブ・ライナー監督。タイトルはベン・E・キングの曲。少年役の4人のうちリヴァー・フェニックスは23歳で亡くなった", "rep": "青春映画、友情映画の決定版。日本では特に人気が高い。大人になった語り手が振り返る構成で、子どもの頃の友だちと二度と戻れない時間への懐かしさが胸に来ると言われる", "points": ["線路の上を4人で歩く場面と鉄橋", "クリスとゴーディの焚き火の会話（家族に認められない2人）", "最後にタイプライターで打たれる一文"], "tips": "89分と短い。見終わったあと、小学校の頃の友だちを思い出す人が多い", "after": "12歳のときの友だちのような友だちは、その後できたか"}, "66": {"min": 124, "mood": "ふつう", "pre": "シチリアの村の映画館と映写技師と少年。長さの違う版があり、短い版をまず見るのがおすすめ", "eye": "キスシーンを切ったフィルムのくだり", "bg": "ジュゼッペ・トルナトーレ監督。イタリアのシチリアの村の映画館で、映写技師アルフレードと少年トトが友情を育てる。最初にイタリアで公開した長い版は不評で、短く編集した国際版がカンヌで審査員特別グランプリとアカデミー外国語映画賞を取った。日本ではミニシアターで記録的なロングランになった", "rep": "「映画への愛」を描いた映画の代表。エンニオ・モリコーネの音楽が有名。短い国際版（124分）と長い完全版（173分）で印象がかなり違い、どちらが好きかで意見が分かれる", "points": ["神父が検閲でキスシーンを切らせる場面", "火事の場面", "最後に見るフィルム"], "tips": "まず124分の版で。完全版は見たあとに気になったら", "after": "故郷を出ることと、故郷を忘れることは同じか"}, "69": {"min": 146, "mood": "重め", "pre": "実在のギャングの30年を本人の語りで振り返る。暴力の場面が多い", "eye": "店の裏口から入る長回しの場面と、ポップスの使い方", "bg": "実在のギャング、ヘンリー・ヒルの半生を描いたノンフィクションが原作。スコセッシ監督。ヘンリー本人のナレーションで進み、実際の会話のように見える即興の場面も多い。ジョー・ペシがアカデミー助演男優賞", "rep": "マフィア映画の中で『ゴッドファーザー』と並ぶ傑作。ゴッドファーザーが王族の物語なら、こちらは下っ端の視点で、ギャングの生活の楽しさと醜さを両方見せる。テンポが速く、ポップスの選曲がうまい", "points": ["ナイトクラブ『コパカバーナ』に裏口から入る長回し", "『俺が面白いってどういう意味だ？』の場面", "後半、薬物とヘリコプターに追われる1日"], "tips": "暴力の場面が突然来る。軽いノリと暴力の落差に注意", "after": "仲間と特別扱いされる心地よさは、何と引き換えなのか"}, "70": {"min": 118, "mood": "重め", "pre": "FBIの訓練生が、連続殺人犯をつかまえるため収監中の元精神科医レクターに話を聞きに行く", "eye": "カメラを見て話す顔のアップ。男だらけの職場の視線", "bg": "トマス・ハリスの小説が原作。ジョナサン・デミ監督。アンソニー・ホプキンスのレクター博士の出演時間は全体の約16分なのにアカデミー主演男優賞を取った。作品・監督・主演男優・主演女優・脚色の主要5部門を独占した3本目の映画", "rep": "サイコスリラーの頂点。俳優がカメラを真正面から見て話す撮り方で、観客が見つめられているように感じる。FBI訓練生クラリスが、男性ばかりの職場で見下されながら進む話としても評価が高い", "points": ["ガラス越しのレクターとクラリスの最初の面会", "情報と引き換えに過去を話させる『交換』", "暗闇の場面（暗視ゴーグル）"], "tips": "グロテスクな場面がある。夜に一人なら覚悟して", "after": "自分の一番弱い記憶を他人に話すと何が起きるか"}, "71": {"min": 137, "mood": "ふつう", "pre": "1作目の『ターミネーター』の続き。先に1作目を見ておく", "eye": "液体金属のCG（1991年）と、ロボットが人間を学んでいく話", "bg": "ジェームズ・キャメロン監督。当時としては史上最高額の予算で、液体金属の敵T-1000をCGで描いた。この映画のCGの成功が、のちの『ジュラシック・パーク』などにつながった", "rep": "アクション映画の最高峰であり、続編が1作目を超えた珍しい例と言われる。1作目の悪役が守る側に回る意外さ、母サラ・コナーの変わりようも評価されている", "points": ["T-1000が床や壁から形を変えて現れる", "大型トラックとバイクの追跡", "ターミネーターが人間の少年から『なぜ泣くのか』を学ぶ"], "tips": "1作目（#62）を先に見る。劇場版で十分", "after": "未来は決まっていないとしたら、何を変えるか"}, "72": {"min": 195, "mood": "重め", "pre": "第二次世界大戦中、ナチス党員の実業家シンドラーが工場でユダヤ人を雇って守った実話。ほぼ白黒。時間と気持ちに余裕のある日に", "eye": "白黒の中に1か所だけ出てくる色", "bg": "トーマス・キニーリーの小説が原作。スピルバーグはユダヤ系で、この作品を自分が撮るべきか10年近く迷ったと言われる。ほぼ白黒で、手持ちカメラでドキュメンタリーのように撮った。監督料は受け取らなかった。アカデミー作品賞・監督賞など7部門", "rep": "ホロコースト（ナチスによるユダヤ人の大量虐殺）を描いた映画の代表。シンドラーは最初、利益目的でユダヤ人を雇う商売人として描かれ、少しずつ変わっていく。描写はとてもつらい", "points": ["白黒の中に1か所だけ現れる赤いコート", "収容所長ゲート（レイフ・ファインズ）の残酷さ", "シンドラーが作っていく『リスト』"], "tips": "195分。時間と心に余裕のある日に。途中で止めてもいい", "after": "もうけのために始めたことが、人を救うことになったとき、その人は善人か"}, "73": {"min": 127, "mood": "軽め", "pre": "遺伝子技術で恐竜をよみがえらせたテーマパーク。1993年にCGと実物大の模型を組み合わせた", "eye": "コップの水が揺れる場面。『できるからやっていいのか』の会話", "bg": "マイケル・クライトンの小説が原作。スピルバーグ監督。当初は恐竜をすべて人形とコマ撮りで作る予定だったが、CGのテスト映像を見て変更した。実物大の恐竜の模型（アニマトロニクス）とCGを組み合わせている", "rep": "CG映画の時代を開いた作品。30年以上たっても恐竜の映像が古く見えないと言われる。娯楽作だが「技術で何でもできるからといってやっていいのか」というテーマもある", "points": ["初めてブラキオサウルスを見上げる場面と音楽", "コップの水の波紋（ティラノサウルスの足音）", "キッチンのラプトル"], "tips": "シリーズは多いが1作目だけで完結。音がいい環境で", "after": "科学者は『できるか』だけでなく『やるべきか』を考えたか（マルコム博士のセリフ）"}, "74": {"min": 142, "mood": "ふつう", "pre": "無実の罪で刑務所に入った銀行員と、調達屋の囚人レッドの20年の友情。原作はスティーヴン・キング", "eye": "レッドの語り。希望についての2人の考えの違い", "bg": "スティーヴン・キングの中編小説『刑務所のリタ・ヘイワース』が原作。フランク・ダラボンの監督デビュー作。公開時は興行的に失敗し、アカデミー賞も無冠だったが、レンタルビデオとテレビで人気になった", "rep": "世界最大級の映画サイトIMDbの利用者評価で長年1位。日本でも「好きな映画」の上位常連。派手さはないが、20年という時間の重さと希望の話として多くの人の人生の1本になっている", "points": ["屋上でビールを飲む場面", "刑務所の放送で流れるモーツァルト", "レッドの仮釈放の面接の場面（何度も出てくる）"], "tips": "ネタバレを見ずに。長さを感じない142分", "after": "閉じ込められた場所で、何を手放さなければ自分でいられるか"}, "75": {"min": 154, "mood": "重め", "pre": "ロサンゼルスの殺し屋や八百長ボクサーの話が、時間の順番をばらばらにして並ぶ。暴力の場面あり", "eye": "どうでもいい会話の長さ。章が変わったら時間がどこか考える", "bg": "クエンティン・タランティーノ監督の2作目。元レンタルビデオ店員で、膨大な映画の知識を引用でつないだ。カンヌ国際映画祭の最高賞。低予算ながら大ヒットし、独立系映画（大手スタジオ以外の映画）の時代を作った", "rep": "1990年代を代表する作品。話の順番をばらばらにした構成、どうでもいい会話（フランスのハンバーガーの呼び方など）の面白さ、ポップな暴力が真似された。暴力と下品な言葉が多く、合わない人もいる", "points": ["ハンバーガーショップの強盗から始まる冒頭", "ジョン・トラボルタとユマ・サーマンのツイスト", "スーツケースの中身（最後まで見せない）"], "tips": "時間の順番を追わなくていい。各章を短編集のつもりで見る", "after": "偶然の出来事をどう受け取るかで、人は変われるのか"}, "76": {"min": 142, "mood": "ふつう", "pre": "知能は低いが素直なフォレストの半生が、1950〜80年代のアメリカの出来事と重なる", "eye": "実在の大統領との合成映像。羽根の場面", "bg": "ウィンストン・グルームの小説が原作。ロバート・ゼメキス監督。過去の記録映像にトム・ハンクスを合成する技術が話題になった。アカデミー作品賞・主演男優賞など6部門", "rep": "アメリカの戦後史をひとりの男の目で振り返る国民的映画。感動作として愛される一方、「何も考えずに従う者が報われ、反抗した者が罰される」という保守的な話だという批判もある。両方知って見ると深くなる", "points": ["バス停で語られる半生という枠組み", "ベトナム戦争とピンポン外交", "ジェニーの人生（フォレストと対になる）"], "tips": "『人生はチョコレートの箱』の名セリフは字幕と吹替で印象が違う", "after": "流れに身を任せて生きることと、自分で選ぶことのどちらが幸せか"}, "77": {"min": 110, "mood": "ふつう", "pre": "ニューヨークの殺し屋と、家族を殺された12歳の少女。長い『完全版』（133分）もある", "eye": "観葉植物と牛乳。ゲイリー・オールドマンの悪役", "bg": "フランスのリュック・ベッソン監督がアメリカで撮った。12歳のマチルダ役ナタリー・ポートマンのデビュー作。完全版は劇場版より約20分長く、2人の関係をより踏み込んで描いた場面が加わっている", "rep": "日本で特に人気の高いアクション映画。殺し屋と少女の孤独な2人の関係が切ない。一方で、大人の男と12歳の少女の関係の描き方は今の目で見ると危うく、議論がある。ゲイリー・オールドマンの悪徳刑事は悪役の名演", "points": ["観葉植物を大事にする殺し屋", "マチルダが『仕事』を教わる場面", "スティングの『Shape of My Heart』"], "tips": "劇場版（110分）から見るのが無難", "after": "居場所のない2人が一緒にいることで、何が救われたのか"}, "78": {"min": 127, "mood": "重め", "pre": "7つの大罪になぞらえた連続殺人を、引退間近の刑事と若い刑事が追う。かなり暗い", "eye": "ずっと雨の街。最後の荒野の場面", "bg": "デヴィッド・フィンチャー監督。脚本は、ニューヨークで暮らして気が滅入った経験から書かれたと言われる。結末は製作会社に変更を求められたが、主演のブラッド・ピットらが守った", "rep": "サスペンスの傑作で、結末の衝撃は映画史に残ると言われる。ずっと雨が降る名前のない街の暗さ、冒頭のタイトルの映像も有名。非常に陰鬱で、見たあと引きずる人が多い", "points": ["引退間近の刑事サマセット（モーガン・フリーマン）と若いミルズ（ブラッド・ピット）の違い", "図書館で調べる場面（バッハの曲）", "最後の荒野の場面"], "tips": "あらすじも結末も検索しない。気分が落ちている日は避ける", "after": "世の中に無関心でいることは罪か（サマセットの考え）"}, "79": {"min": 106, "mood": "ふつう", "pre": "船の爆破事件の生き残りが取り調べで語る話。あらすじも感想も読まずに見るのがいちばん", "eye": "取調室の壁の掲示板", "bg": "ブライアン・シンガー監督、クリストファー・マッカリー脚本（アカデミー脚本賞）。低予算で35日ほどで撮った。ケヴィン・スペイシーがアカデミー助演男優賞（スペイシーはのちに性的加害の告発を受けている）", "rep": "「どんでん返し映画」の代表。何度見ても新しい発見があると言われる。取調室の会話だけで、観客の頭の中に大きな犯罪の絵を描かせる脚本の力が評価されている", "points": ["5人の容疑者が並ぶ面通しの場面（笑いをこらえられなかったのは本当だと言われる）", "伝説の犯罪者『カイザー・ソゼ』の話", "取調室の壁"], "tips": "絶対にネタバレを見ない。細部に注意を払うほど楽しい", "after": "語り手の話を、どこまで信じていたか"}, "82": {"min": 126, "mood": "ふつう", "pre": "ボストンの清掃員の青年は数学の天才。心に傷を抱える彼とセラピストの話。マット・デイモンとベン・アフレックが自分たちで脚本を書いた", "eye": "公園のベンチの場面のロビン・ウィリアムズ", "bg": "マット・デイモンとベン・アフレックが、売れない俳優時代に自分たちで脚本を書き、主演を条件に売り込んだ。アカデミー脚本賞を2人で受賞。ロビン・ウィリアムズは助演男優賞", "rep": "才能と心の傷を描いた青春映画の名作。天才の話というより、傷つくのが怖くて人と深く関われない青年の話として共感する人が多い。セラピストとの会話の場面が名場面", "points": ["公園のベンチでの『君は本当の痛みを知らない』という話", "『君は悪くない』の場面", "親友チャッキーが語る、毎朝の願い"], "tips": "院に進む前の今の時期に見ると、自分の進路と重なる部分があるかもしれない", "after": "自分の才能を使わないことは、誰に対して不誠実なのか"}, "83": {"min": 117, "mood": "重め", "pre": "前半はイタリアの町の明るい恋のコメディ、後半は強制収容所。前半の明るさが後半のための伏線", "eye": "父が息子についた『ゲーム』という嘘", "bg": "イタリアのコメディアン、ロベルト・ベニーニが監督・脚本・主演。父親が強制収容所にいた経験がもとになっている。アカデミー主演男優賞と外国語映画賞、カンヌの審査員グランプリ", "rep": "ホロコーストを笑いで描いて大きな議論になったが、多くの人に愛されている。前半の陽気な恋のコメディが、後半の収容所の場面を支える構成。「笑いで子どもを守る父」の姿に泣く人が多い。一方で軽すぎるという批判もある", "points": ["前半の『偶然』の重なりで恋が進む場面", "収容所で息子に『これはゲームだ』と説明する場面", "ドイツ語の通訳を勝手に作る場面"], "tips": "前半は辛抱して。前半のすべてが後半につながる", "after": "つらい現実から子どもを守るためのうそは、正しいか"}, "84": {"min": 169, "mood": "重め", "pre": "第二次世界大戦のノルマンディー上陸作戦。冒頭の約25分の上陸の場面は非常に生々しい", "eye": "1人を救うために8人を危険にさらす命令をどう考えるか", "bg": "スピルバーグ監督。1944年のノルマンディー上陸作戦（オマハ・ビーチ）を、手持ちカメラと色を抜いた映像で再現した。上陸の場面には約1000人のエキストラを使い、実際に体の一部を失った人も参加した。帰還兵から『本物に一番近い』と言われた", "rep": "戦争映画の描き方を変えた作品。冒頭の約25分は映画史上最も壮絶な戦闘場面と言われる。中盤の『1人の兵士を救うために8人が命をかける意味があるのか』という問いが物語の中心", "points": ["冒頭の上陸の場面（音が消える瞬間）", "部隊の兵士たちの会話（それぞれの考え）", "最後の橋の戦い"], "tips": "冒頭が非常に生々しい。169分。体調のいい日に", "after": "1人の命と8人の命は比べられるか。命を救われた側は何を背負うのか"}, "85": {"min": 136, "mood": "ふつう", "pre": "自分のいる世界がコンピューターの中だと知ったプログラマーの話。今のVRやAIの話の元ネタが多い", "eye": "弾をよける場面の撮り方（カメラを何十台も並べて撮った）。赤い薬と青い薬", "bg": "ウォシャウスキー姉妹の監督。日本のアニメ（『攻殻機動隊』）や香港のカンフー映画、哲学から強い影響を受けている。アクションの振り付けは香港のユエン・ウーピン。弾がゆっくり飛ぶ『バレットタイム』は、カメラを何十台も並べて撮った", "rep": "1999年のSFアクションの革命で、その後の映画やゲームに大量に真似された。「自分のいる世界は本物か」という哲学的な問いを、娯楽として誰でも楽しめる形にしたと評価されている", "points": ["赤い薬と青い薬の選択", "ロビーの銃撃戦と屋上の弾よけ", "緑の文字が流れる画面"], "tips": "続編が3本あるが、1作目だけで完結している", "after": "もし今の生活が作られた世界だと知ったら、真実と快適さのどちらを選ぶか"}, "86": {"min": 139, "mood": "重め", "pre": "不眠症の会社員が謎の男タイラーと地下の殴り合いのクラブを作る。あらすじを読まずに見る", "eye": "画面に一瞬だけ映るもの。消費社会への皮肉", "bg": "チャック・パラニュークの小説が原作。デヴィッド・フィンチャー監督。公開時は興行的に失敗し、批評も割れたが、ビデオで人気になってカルト的な作品になった", "rep": "消費社会（物を買うことで自分を作る生き方）への強烈な皮肉。一方で、暴力的な男らしさを肯定していると誤解されて読まれることも多く、作り手はそれを皮肉っている側だという議論がある。どんでん返しも有名", "points": ["IKEAの家具カタログのように部屋が埋まっていく場面", "タイラー（ブラッド・ピット）の『ルール』", "画面に一瞬映り込むもの"], "tips": "絶対にネタバレを見ない。2回目に見ると全く違う映画になる", "after": "持ち物や肩書きを全部捨てたら、自分には何が残るか"}, "87": {"min": 155, "mood": "ふつう", "pre": "ローマ帝国の将軍が皇帝に家族を奪われ、剣闘士として闘技場に立つ", "eye": "コロッセオの場面と、麦畑に手をのばす場面", "bg": "リドリー・スコット監督。撮影開始時に脚本が完成しておらず、撮りながら書き直した。撮影中に重要な役の俳優オリヴァー・リードが亡くなり、CGで補った場面がある。アカデミー作品賞と主演男優賞（ラッセル・クロウ）", "rep": "古代ローマ物の大作を21世紀によみがえらせた。史実とは違う部分が多いが、復讐劇としての分かりやすさと迫力が評価されている。ハンス・ジマーとリサ・ジェラードの音楽も人気", "points": ["冒頭のゲルマニアの戦い", "コロッセオでの戦車の場面", "マキシマスが麦の穂に手をのばす場面"], "tips": "155分。気持ちよく見られる大作", "after": "群衆の人気は、権力に対抗する力になるか"}, "88": {"min": 113, "mood": "ふつう", "pre": "10分しか記憶がもたない男が、妻を殺した犯人を探す。カラーの場面は時間を逆に、白黒の場面は順に進む", "eye": "最初の場面が実は物語の最後。2回目に見ると別の映画になる", "bg": "クリストファー・ノーラン監督の出世作。弟ジョナサン・ノーランの短編小説がもと。低予算で25日ほどで撮った", "rep": "構成の発明で有名な映画。観客も主人公と同じく「その前に何があったか」を知らない状態に置かれる。2回目に見ると全く違う映画に見えると言われる。頭を使うのが好きな人に人気", "points": ["カラーの場面は時間が逆向き、白黒の場面は順向きに進み、最後に合流する", "主人公が体に彫った入れ墨とポラロイド写真", "誰を信じていいのか分からなくなる感覚"], "tips": "途中で混乱しても大丈夫。見たあとに時系列の解説を読むと楽しい", "after": "記憶が当てにならないなら、人は何を根拠に自分を信じるか"}, "89": {"min": 178, "mood": "ふつう", "pre": "3部作の1作目で、話は途中で終わる。指輪を捨てに行く旅の始まり。長い『追加シーン版』（208分）もある", "eye": "ニュージーランドの景色と、9人の仲間の性格の違い", "bg": "J・R・R・トールキンの小説『指輪物語』の映画化。ピーター・ジャクソン監督が3部作を一度にまとめてニュージーランドで撮影した（約1年3か月）。3作目は『ベン・ハー』『タイタニック』と並ぶアカデミー賞11部門を取った", "rep": "ファンタジー映画の到達点。CGと実物のセット、大きさの違う人物を同じ画面に収める遠近法の工夫が評価されている。1作目は旅の始まりで、物語は途中で終わる（続きは『二つの塔』『王の帰還』）", "points": ["ホビット庄ののどかさ（この後の旅との対比）", "モリアの坑道と橋の場面", "旅の仲間9人の性格の違い"], "tips": "178分。気に入ったら残り2作もプライムやU-NEXTで見られることが多い。追加シーン版は2回目以降に", "after": "力を持つことと、それを手放すことの、どちらが難しいか"}, "90": {"min": 122, "mood": "軽め", "pre": "パリのカフェで働く空想好きの女性が、他人を内緒で幸せにしようとする", "eye": "赤と緑の色づかい。小さな好き・嫌いの紹介のテンポ", "bg": "ジャン＝ピエール・ジュネ監督。パリのモンマルトルで撮り、ゴミや落書きをデジタルで消して、現実より少しきれいな夢のパリにした。フランスで大ヒットし、日本でもミニシアターから広がって社会現象になった", "rep": "おしゃれで可愛いフランス映画の代表。赤と緑の強い色づかい、登場人物の『好きなこと・嫌いなこと』の紹介など、絵本のような作りが人気。一方で、パリを白人だけのきれいな街に描きすぎているという批判もある", "points": ["冒頭、登場人物を好き嫌いで紹介していくテンポ", "古い家で見つけた宝箱から始まるいたずら", "証明写真の機械の下に捨てられた写真を集める男"], "tips": "気分を上げたい日に。音楽（ヤン・ティルセン）も合わせて楽しむ", "after": "人の幸せのために動くのは得意でも、自分の幸せに踏み出せないのはなぜか"}, "91": {"min": 150, "mood": "重め", "pre": "第二次世界大戦中、ワルシャワのユダヤ人ピアニストが生き延びた実話。監督ポランスキー自身もゲットーから逃げた子どもだった", "eye": "ピアノを弾けない時間の長さと、廃墟の中の演奏", "bg": "ポーランドのピアニスト、ヴワディスワフ・シュピルマンの回想録が原作。ロマン・ポランスキー監督自身が子どもの頃にクラクフのゲットーから逃げ延び、母親を収容所で亡くしている。カンヌの最高賞、アカデミー監督賞・主演男優賞（エイドリアン・ブロディ）", "rep": "英雄の話ではなく「ただ生き延びた人」の話として評価が高い。主人公はほとんど何もできず、隠れ、飢え、助けられる。その無力さをそのまま描く誠実さが称えられている。ブロディは役作りで大幅に減量した", "points": ["家族が少しずつ自由を奪われていく前半", "隠れ家の部屋で、音を出さずにピアノを弾く真似をする場面", "廃墟の中での演奏"], "tips": "150分。重いが、『シンドラーのリスト』とは違う角度。続けて見ると疲れるので間をあける", "after": "何もできないまま生き延びることにも意味があるか"}, "92": {"min": 122, "mood": "重め", "pre": "1980年のテキサス、麻薬取引の大金を拾った男を殺し屋が追う。音楽がほとんど流れない", "eye": "殺し屋シガーの髪型とコイン。老いた保安官の語り", "bg": "コーマック・マッカーシーの小説が原作。コーエン兄弟の監督。アカデミー作品賞・監督賞など4部門。殺し屋シガー役のハビエル・バルデムは助演男優賞", "rep": "現代の西部劇でありサスペンスの傑作。音楽をほとんど使わず、足音や風の音で緊張を作る演出が評価されている。結末が普通の映画と違うので、戸惑う人も多い（それが意図）", "points": ["ガソリンスタンドのコインの場面", "モーテルの場面の静けさ", "老保安官（トミー・リー・ジョーンズ）が語る夢の話"], "tips": "派手な決着を期待しない。タイトル（老人の住む国ではない）の意味を考えながら", "after": "世の中の暴力が理解を超えたとき、人は何を頼りにするか"}, "93": {"min": 152, "mood": "ふつう", "pre": "バットマンの3部作の2作目。前作を見ていなくても分かる。ヒーローものというより犯罪映画", "eye": "ジョーカーの『社会実験』。2隻の船の場面", "bg": "クリストファー・ノーラン監督のバットマン3部作の2作目。ジョーカー役のヒース・レジャーは撮影後、公開前に28歳で亡くなり、アカデミー助演男優賞が贈られた。一部の場面を大型のIMAXカメラで撮った最初の大作映画", "rep": "アメコミ映画を「本格的な犯罪映画」に引き上げた作品。ヒーローとは何か、秩序と混沌、監視と自由といったテーマが、テロ以後のアメリカ社会の話としても読まれる。ジョーカーは映画史上最高の悪役の候補", "points": ["冒頭の銀行強盗", "ジョーカーが語る、口の傷の理由（毎回違う）", "2隻のフェリーの場面"], "tips": "前作『バットマン ビギンズ』を見ていなくても分かる。152分", "after": "社会を守るためなら、ルールを破ってもいいのか"}, "94": {"min": 120, "mood": "ふつう", "pre": "ムンバイのスラム出身の青年がクイズ番組で勝ち進む。なぜ答えを知っていたかを過去の場面で見せる", "eye": "1問ごとに人生の一場面がつながる作り。エンドロールのダンス", "bg": "インドの外交官ヴィカス・スワラップの小説『ぼくと1ルピーの神様』が原作。イギリスのダニー・ボイル監督がムンバイで撮影した。子役の一部は実際のスラムの子どもたち。アカデミー作品賞など8部門", "rep": "勢いのある映像と音楽（A・R・ラフマーン）で一気に見られる娯楽作。一方、スラムの貧困を外国人の目で見せ物にしているという批判もインドで起きた", "points": ["クイズの問題1問ごとに、答えを知った過去が明かされる構成", "兄サリームとの関係", "エンドロールのダンス"], "tips": "テンポが速いので疲れていても見られる。暴力の場面は少しある", "after": "主人公が答えを知っていたのは運か、人生か"}, "95": {"min": 148, "mood": "ふつう", "pre": "他人の夢に入ってアイデアを盗む・植える技術者の話。夢の中の夢と階層が深くなる", "eye": "どの階層で何分たったかを追う。最後のコマ", "bg": "クリストファー・ノーランが10年近く温めた企画。CGをできるだけ使わず、回転する廊下のセットを実際に作って格闘場面を撮った。音楽はハンス・ジマー", "rep": "複雑な設定を娯楽として成立させた傑作。夢の中で時間の進み方が変わるルールを、観客に分かるように説明しながら進めるのがうまいと評価されている。最後の場面の解釈はいまだに議論がある", "points": ["パリの街が折れ曲がる場面", "無重力になった廊下の格闘", "各階層で同時に進む『キック』のタイミング"], "tips": "最初の30分のルール説明をしっかり聞く。148分", "after": "人の考えを変えるには、本人が自分で思いついたと思わせる必要があるのか"}, "96": {"min": 120, "mood": "ふつう", "pre": "ハーバード大学の学生がFacebookを作り、共同創業者と訴訟になるまで。2つの裁判の場面と過去が交互に進む。起業の話として見ると面白い", "eye": "最初の飲み屋の会話の速さ（脚本アーロン・ソーキン）。誰が何を作ったのかという問い", "bg": "ハーバード大学の学生マーク・ザッカーバーグがFacebookを作り、共同創業者や双子の先輩から訴えられた実話がもと（脚色が多く、本人は事実と違うと言っている）。脚本アーロン・ソーキン（アカデミー脚色賞）、監督デヴィッド・フィンチャー、音楽はトレント・レズナーとアッティカス・ロス（作曲賞）", "rep": "21世紀の起業を描いた映画の代表。早口で密度の高い会話、2つの裁判と過去を行き来する構成が評価されている。成功の話というより、友だちを失いながら何かを作る話として見られている", "points": ["冒頭、恋人と別れる会話（約5分、セリフが速い）", "ボート競技の場面（音楽『山の魔王の宮殿にて』）", "共同創業者エドゥアルドの持ち株が薄められる場面"], "tips": "字幕を追うのが大変なので、2回目に吹替で見るのもあり。起業や宙豆ラボでの株・役割の話と重ねると、自分ごとになる", "after": "アイデアを出した人、作った人、お金を出した人。会社は誰のものか"}, "97": {"min": 107, "mood": "ふつう", "pre": "名門音楽学校のドラマーの学生と、極端に厳しい教師。原題 Whiplash は練習する曲の名前", "eye": "ラスト約10分の演奏。厳しさは才能を伸ばすのか潰すのか", "bg": "デイミアン・チャゼル監督が、高校時代にジャズのドラマーとして厳しい指導者についた経験がもと。短編映画を作ってそれを元に長編の資金を集め、約19日で撮影した。J・K・シモンズがアカデミー助演男優賞", "rep": "音楽映画なのにスリラーのような緊張感がある、と絶賛された。教師フレッチャーの指導は才能を引き出すのか、ただの虐待なのか。見た人の間で意見が激しく分かれる。プロのジャズ奏者からは、ジャズの描き方が違うという批判もある", "points": ["『テンポが早いのか遅いのか』の場面", "血が出るまで練習する場面", "最後の約10分の演奏"], "tips": "107分と短く、一気に見られる。音量は大きめで", "after": "『よくやった（Good job）』という言葉は、成長を止めるのか"}, "98": {"min": 169, "mood": "ふつう", "pre": "食料不足で滅びかけた地球から、宇宙飛行士が人の住める星を探しに行く。相対性理論（重力で時間の進み方が変わる）が話の柱", "eye": "水の星での『1時間＝地球の7年』。父と娘の時間のずれ", "bg": "クリストファー・ノーラン監督。ノーベル物理学賞を受けた物理学者キップ・ソーンが科学監修と製作総指揮を務めた。ブラックホールの映像は、ソーンの計算をもとに作られ、その計算から論文も書かれた", "rep": "宇宙の科学をここまで正面から描いた娯楽作は珍しいと評価されている。一方で、終盤の展開は科学より感情に寄りすぎているという声もある。父と娘の話として泣く人が多い", "points": ["本棚から本が落ちる『幽霊』の謎", "水の惑星での1時間が地球の7年になる場面", "ドッキングの場面（ハンス・ジマーのパイプオルガン）"], "tips": "169分。大きい画面と音で。物理（相対性理論）を少し知っていると楽しいが、知らなくても分かる", "after": "人類を救うことと、家族のもとに帰ることのどちらを選ぶか"}, "99": {"min": 128, "mood": "ふつう", "pre": "ロサンゼルスで女優を目指す女性とジャズピアニストの恋のミュージカル。季節ごとの章立て", "eye": "冒頭の高速道路の長回し。最後の約8分", "bg": "『セッション』のデイミアン・チャゼル監督が、学生の頃から温めていた企画。ライアン・ゴズリングはピアノを数か月練習し、演奏場面の多くを自分で弾いた。アカデミー賞6部門（監督賞・主演女優賞など）", "rep": "往年のハリウッド・ミュージカルへの愛を、今のロサンゼルスで描いた作品。夢を追うことと恋の両立の難しさが、とても現実的に描かれる。結末の切なさで評価が分かれるが、好きな人には一生の1本になる", "points": ["冒頭、渋滞の高速道路で全員が踊り出す長回し", "グリフィス天文台の場面", "最後の約8分（もしもの物語）"], "tips": "冒頭のミュージカルで引いても、その後は普通のドラマに近い。最後まで見る", "after": "夢がかなったとき、手放したものは何だったか"}, "100": {"min": 132, "mood": "重め", "pre": "半地下の家に住む貧しい一家が、高台の豪邸に家庭教師などとして入り込む。韓国映画。あらすじを読まずに見る", "eye": "階段と高さ。におい", "bg": "韓国のポン・ジュノ監督。カンヌ国際映画祭の最高賞と、英語以外の映画として初めてのアカデミー作品賞を取った。豪邸はほぼ全部セットとして建てた", "rep": "格差社会を描いた現代の傑作。家族コメディとして始まり、サスペンス、ホラーへとジャンルが変わっていく。笑っていたはずが最後に笑えなくなる、と言われる。日本でも大ヒットした", "points": ["半地下の窓から見える路上の景色", "豪邸と半地下の家の高さの差（階段の多さ）", "『におい』についての会話"], "tips": "あらすじも予告も見ない。132分", "after": "お金持ちの家族は悪人だったか。悪くない人だけで格差は生まれるのか"}, "101": {"min": 108, "mood": "ふつう", "pre": "ニューヨークの港で、労働組合を牛耳るギャングに逆らうか迷う元ボクサー。マーロン・ブランド主演", "eye": "タクシーの後部座席の兄弟の会話", "bg": "エリア・カザン監督。ニューヨークの港湾労働者の汚職を暴いた新聞記事がもと。カザン自身が赤狩り（共産主義者の摘発）の公聴会で仲間の名前を証言しており、『密告する主人公』を肯定的に描いたことは自己弁護だと批判もされた。アカデミー作品賞など8部門", "rep": "マーロン・ブランドの演技は、映画の演技を変えたと言われる（『メソッド演技』という、役の感情を自分の中から作る演技）。労働者の暮らしを現地で撮ったリアルさも評価が高い", "points": ["タクシーの後部座席での兄弟の会話（『俺はなれたかもしれないんだ』）", "鳩小屋の場面", "教会の神父の演説"], "tips": "白黒・108分。セリフが聞き取りにくい場面があるので字幕で", "after": "仲間を裏切ることと、不正を告発することの違いはどこにあるか"}, "102": {"min": 133, "mood": "ふつう", "pre": "父の遺産をもらえなかった車のディーラーが、自閉症の兄（数字に飛び抜けた力がある）とアメリカを車で横断する", "eye": "弟が兄に合わせ方を覚えていく旅。ラスベガスの場面", "bg": "バリー・レヴィンソン監督。ダスティン・ホフマンは、自閉症の当事者や家族を1年かけて取材して役を作った。モデルの一人は、驚異的な記憶力を持つキム・ピーク。アカデミー作品賞・主演男優賞など4部門", "rep": "兄弟のロードムービーとして愛されている。自閉症を世間に広く知らせた一方、「自閉症の人は特別な才能を持っている」という誤解も広げたと指摘されている。トム・クルーズの、身勝手な弟が変わっていく演技も評価されている", "points": ["兄レイモンドの決まった習慣（テレビ番組、下着の店）", "落ちた爪楊枝の数を一瞬で数える場面", "弟チャーリーが兄に合わせ方を覚えていく旅"], "tips": "1988年の描き方なので、今の理解とは違う部分があると思って見る", "after": "相手を変えようとするのではなく、自分が相手に合わせるとき、何が起きるか"}, "103": {"min": 170, "mood": "ふつう", "pre": "ロサンゼルスの強盗団のリーダーと刑事の対決。デ・ニーロとアル・パチーノ", "eye": "2人が初めて向き合うダイナーの場面。昼間の市街の銃撃戦の音", "bg": "マイケル・マン監督。自分が以前に作ったテレビ映画をもとに作り直した。ロバート・デ・ニーロとアル・パチーノが、『ゴッドファーザー PART II』以来の共演で、初めて同じ場面で顔を合わせた", "rep": "犯罪映画の最高峰の一つで、後のアクション映画（『ダークナイト』など）に大きな影響を与えた。昼のロサンゼルスの市街戦は、銃声を実際の撮影音で録って、今でも最もリアルな銃撃戦と言われる。刑事と強盗、両方の孤独を描いている", "points": ["冒頭の現金輸送車強盗", "2人がダイナーで向き合う場面", "ダウンタウンの銃撃戦"], "tips": "170分。人物が多いが、刑事側と強盗団の二つのグループで追えば迷わない", "after": "仕事のために他のすべてを捨てられる人は、幸せか"}, "104": {"min": 98, "mood": "ふつう", "pre": "借金に困った車のセールスマンが、自分の妻の狂言誘拐を頼んだことから始まる。冬のミネソタの田舎", "eye": "妊娠中の警察署長マージの、のんびりした有能さ", "bg": "コーエン兄弟の監督。冒頭に『これは実話である』と出るが、実際は創作（この言葉自体がジョーク）。監督の地元ミネソタの冬の田舎が舞台。フランシス・マクドーマンド（ジョエル・コーエンの妻）がアカデミー主演女優賞", "rep": "犯罪映画であり、とぼけたコメディでもある。小さな嘘が雪だるま式に大事件になる脚本の完成度と、雪の中の真っ白な風景が評価されている。登場人物のミネソタなまり（『ヤー』）も有名", "points": ["自動車セールスマンのジェリーがどんどん追いつめられていく", "妊婦の警察署長マージの、のんびりして鋭い捜査", "雪原と、薪を砕く機械"], "tips": "98分。暴力の場面はあるが短い。ブラックユーモアとして笑っていい", "after": "ちょっとした嘘とお金の欲は、どこで取り返しがつかなくなるのか"}, "105": {"min": 103, "mood": "軽め", "pre": "保険会社の会社員トゥルーマンの、何でもない毎日の話。あらすじを読まずに見る", "eye": "毎朝のあいさつと、町の人たちの不自然さ", "bg": "ピーター・ウィアー監督、脚本アンドリュー・ニコル。コメディ俳優として知られていたジム・キャリーの、初めての本格的なドラマ。まだSNSもリアリティ番組の流行もほとんどない1998年の作品", "rep": "「予言的な映画」と言われる。自分の生活が誰かに見られ、商品になる世界は、今のSNSやリアリティ番組を先取りしていた。軽く楽しく見られて、後から深く考えさせられる", "points": ["毎朝同じ時間に同じあいさつをする隣人", "空から落ちてくる照明", "トゥルーマンが海を怖がる理由"], "tips": "103分。あらすじを読まずに見る", "after": "見られていると分かったら、人は自分らしくいられるか。今のSNSの自分はどうか"}, "106": {"min": 133, "mood": "重め", "pre": "年老いたボクシングトレーナーと、30歳を過ぎてボクサーを目指す女性。後半で話が大きく変わる", "eye": "イーストウッド本人が演じるトレーナーの口数の少なさ", "bg": "クリント・イーストウッドが監督・主演・音楽。トレーナーF・X・トゥールの短編集が原作。撮影は37日ほど。アカデミー作品賞・監督賞・主演女優賞（ヒラリー・スワンク）・助演男優賞（モーガン・フリーマン）", "rep": "前半はスポーツ映画、後半はまったく違う重い問いの映画になる。結末について大きな議論が起きた。イーストウッドの静かな演出と、3人の俳優の抑えた演技が高く評価されている", "points": ["31歳でボクサーを目指すマギーの粘り", "フランキーと、連絡のとれない実の娘", "ゲール語の言葉『モ・クシュラ』の意味"], "tips": "後半の展開を知らずに見る。かなり重いので覚悟して", "after": "大切な人の頼みが、自分には受け入れがたいものだったらどうするか"}, "107": {"min": 151, "mood": "重め", "pre": "警察に潜入したギャングと、ギャングに潜入した警官の話。香港映画『インファナル・アフェア』のリメイク", "eye": "お互いを探り合う2人。誰に電話しているか", "bg": "香港映画『インファナル・アフェア』（2002年）のリメイク。マーティン・スコセッシ監督が、長年の候補入りの末、初めてアカデミー監督賞を取った。作品賞も受賞", "rep": "スター俳優（レオナルド・ディカプリオ、マット・デイモン、ジャック・ニコルソン）の豪華な共演と、二重スパイの緊張感で評価が高い。原作の香港版のほうが好きという人も多く、見比べるのも楽しみ方", "points": ["警察学校から2人の人生が交差して始まる", "携帯電話で相手の正体を探り合う場面", "ジャック・ニコルソンのボス、コステロ"], "tips": "151分。人物の所属（警察／マフィア）を最初に押さえる", "after": "長く嘘の自分を演じ続けると、本当の自分はどこへ行くか"}, "108": {"min": 113, "mood": "軽め", "pre": "事故で首から下が動かなくなったパリの富豪と、介護人に雇われた移民の若者。実話がもと", "eye": "同情しない若者の接し方。誕生日の音楽の場面", "bg": "事故で首から下がまひした大富豪フィリップ・ポッツォ・ディ・ボルゴと、介護人アブデル（映画ではドリス）の実話がもと。フランスで歴代上位の大ヒットになり、日本でもフランス映画として異例のヒットになった", "rep": "障害と貧困、人種という重いテーマを、笑いで包んだヒューマンコメディ。同情せずに対等に接するドリスの態度が多くの人の心をつかんだ。一方、移民の青年の描き方が型にはまっているという批判もある", "points": ["面接の場面（ドリスは失業手当の書類にサインが欲しいだけ）", "誕生日のパーティーの音楽（クラシックとアース・ウィンド・アンド・ファイアー）", "夜のパリの街を歩く場面"], "tips": "113分。疲れているときでも見られる", "after": "相手を気づかうことと、相手を特別扱いすることの違い"}, "109": {"min": 91, "mood": "ふつう", "pre": "宇宙望遠鏡の修理中に事故が起き、宇宙に放り出された技術者。ほぼ2人だけで90分", "eye": "冒頭の約13分の長回し。宇宙には音がないことの使い方", "bg": "メキシコのアルフォンソ・キュアロン監督。無重力に見せるため、俳優を箱の中に入れ周りのLED画面に映像を映す方法など、新しい撮影技術を開発した。撮影監督エマニュエル・ルベツキの長回しも見どころ。アカデミー監督賞など7部門", "rep": "映画館での『体験』として高く評価された作品。物語は単純だが、宇宙空間の怖さと、生きることへの意志を体で感じさせる。科学的に正しくない部分（軌道の移動など）はよく指摘される", "points": ["冒頭の約13分の切れ目のない長回し", "宇宙では音が伝わらないので、爆発が無音になる", "宇宙船の中で胎児のように体を丸める場面"], "tips": "91分。できるだけ大きな画面と良い音で、暗い部屋で", "after": "どん底から立ち上がるとき、人は何を力にするのか"}, "110": {"min": 120, "mood": "ふつう", "pre": "水と石油を独裁者が握る荒れ果てた未来の砂漠。シリーズ4作目だが前作を見ていなくても分かる。ほぼ2時間の追跡", "eye": "本物の車を走らせて撮った場面の多さ。女性の戦士フュリオサ", "bg": "ジョージ・ミラー監督（公開時70歳）の『マッドマックス』シリーズ4作目。オーストラリアから撮影地をナミビアの砂漠に移し、本物の車を何台も壊して撮った。脚本は文章ではなく約3500枚の絵コンテで作った。アカデミー賞6部門", "rep": "21世紀最高のアクション映画の候補。ほぼ全編が往復の追跡劇なのに、セリフに頼らずに世界観と人物を伝える作りが評価されている。実は主人公はマックスより女性戦士フュリオサだと言われる", "points": ["ギターから火を吹く男が乗った車", "砂嵐の中の追跡", "棒高跳びのように車から車へ飛び移る戦士たち"], "tips": "前作は見なくていい。120分ずっと追跡なので、音量を上げて", "after": "支配者から逃げた先に楽園はあるのか、それとも戻って変えるべきか"}, "111": {"min": 122, "mood": "重め", "pre": "1981年のゴッサム、コメディアンを目指す孤独な男アーサーの話。バットマンを知らなくても分かる。暗い", "eye": "階段の場面と、アーサーの笑いが止まらない理由", "bg": "トッド・フィリップス監督。バットマンの悪役ジョーカーの誕生を、コミックの設定から離れて独自に描いた。『タクシードライバー』（#50）や『キング・オブ・コメディ』の影響を公言しており、ロバート・デ・ニーロも出演。ヴェネツィア国際映画祭の最高賞、ホアキン・フェニックスがアカデミー主演男優賞", "rep": "公開時、暴力を美化して模倣犯を生むのではと社会的な議論になった。一方で、心の病と社会の冷たさを描いた作品として高く評価された。どこまでが現実でどこからが主人公の妄想か、解釈が分かれる", "points": ["笑いが止まらなくなる病気の発作", "長い階段を上る日常と、同じ階段を踊りながら下りる場面", "テレビのトーク番組の場面"], "tips": "暗く重い。『タクシードライバー』と見比べると、似ている点と違う点が分かる", "after": "社会は孤独な人をどう追いつめるのか。それでも個人の責任はあるか"}};
 const ORDER = GROUPS.flatMap(g => g.films.map(f => f.n));
-const FILMS = Object.fromEntries(GROUPS.flatMap(g => g.films.map(f => [f.n, { ...f, g: g.name }])));
-let watched = {};      // n -> date string
-let canWrite = false;
-let hideDone = false;
-const openMemo = new Set();
-try { hideDone = localStorage.getItem("eiga100-hide") === "1"; } catch (e) {}
+const FILMS = Object.fromEntries(GROUPS.flatMap(g => g.films.map(f => [f.n, { ...f, g: g.name, gk: g.key }])));
+let W = {};
+let mode = "loading";
+let filter = "all";
+let gachaPick = null;
+let fresh = null;
+let listAnim = true;
+const ls = {
+  get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); return true; } catch (e) { return false; } }
+};
+let hideDone = ls.get("eiga100-hide") === "1";
+let sound = ls.get("eiga100-sound") !== "0";
 
 const $ = id => document.getElementById(id);
-const CHECK = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3.2 3L13 4.5" fill="none" stroke="var(--surface)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+function h(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+const ICON = {
+  home: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>',
+  list: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 4v16M17 4v16M3 9h4M3 14h4M17 9h4M17 14h4"/></svg>',
+  ticket: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2a3 3 0 0 0 0 6v2a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-2a3 3 0 0 0 0-6z"/><path d="M14 5v14" stroke-dasharray="2 2"/></svg>',
+  trophy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4h8v5a4 4 0 0 1-8 0zM8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8 21h8M9 17h6"/></svg>',
+  check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+  flame: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c1 3.5 5 5.5 5 11a5 5 0 0 1-10 0c0-2.4 1.2-4 2.5-5.2.2 1.6 1 2.6 2 3.2C11 8 11 5 12 2z"/></svg>',
+  medal: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="14" r="6"/><path d="M8.5 9 6 3h4l2 4 2-4h4l-2.5 6M12 11.5l.9 1.8 2 .3-1.4 1.4.3 2-1.8-1-1.8 1 .3-2-1.4-1.4 2-.3z"/></svg>',
+  soundOn: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>',
+  soundOff: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M17 9l5 6M22 9l-5 6"/></svg>'
+};
 
-function today() {
-  const d = new Date(Date.now() + 9 * 3600e3 - 6 * 3600e3); // JST, day starts at 6:00
-  return d.toISOString().slice(0, 10);
+/* time: JST (+9h) with the day starting at 6:00 (−6h) */
+function today() { return new Date(Date.now() + 3 * 3600e3).toISOString().slice(0, 10); }
+function md(d) { const [, m, dd] = d.split("-"); return `${+m}/${+dd}`; }
+function weekKey(d) { const t = new Date(d + "T00:00:00Z"); t.setUTCDate(t.getUTCDate() - ((t.getUTCDay() + 6) % 7)); return t.toISOString().slice(0, 10); }
+
+/* derived */
+const RANKS = [[0, "見習い"], [5, "映画好き"], [10, "映画ファン"], [25, "常連"], [40, "映画通"], [60, "シネフィル"], [80, "名画座の主"], [100, "名作マスター"]];
+const rankOf = c => RANKS.reduce((r, x) => (c >= x[0] ? x : r), RANKS[0]);
+const nextRank = c => RANKS.find(x => x[0] > c) || null;
+const MINS = k => (META[k] || {}).min || 0;
+const MOOD = k => (META[k] || {}).mood;
+const ACH = (() => {
+  const list = [];
+  const dec = {};
+  for (const k of ORDER) { const d = Math.floor(+FILMS[k].y / 10) * 10; const key = d < 1960 ? "1930〜50年代" : d >= 2000 ? "2000年代〜" : `${d}年代`; (dec[key] = dec[key] || []).push(k); }
+  for (const [name, ks] of Object.entries(dec)) list.push({ id: "dec-" + name, label: `${name}制覇`, desc: `${name}の${ks.length}本を全部`, ks });
+  const dirs = {};
+  for (const k of ORDER) for (const d of FILMS[k].d.split("／")) (dirs[d] = dirs[d] || []).push(k);
+  for (const [name, ks] of Object.entries(dirs)) if (ks.length >= 3) list.push({ id: "dir-" + name, label: `${name.split("・").pop()}コンプ`, desc: `${name}の${ks.length}本を全部`, ks });
+  for (const g of GROUPS) list.push({ id: "grp-" + g.key, label: `${g.name}制覇`, desc: `${g.name}の${g.films.length}本を全部`, ks: g.films.map(f => f.n) });
+  list.push({ id: "long", label: "3時間超えを全部", desc: "180分以上の大作をすべて", ks: ORDER.filter(k => MINS(k) >= 180) });
+  list.push({ id: "heavy10", label: "重めを10本", desc: "見たあと重い作品を10本", need: 10, ks: ORDER.filter(k => MOOD(k) === "重め") });
+  list.push({ id: "light10", label: "軽めを10本", desc: "気楽に見られる作品を10本", need: 10, ks: ORDER.filter(k => MOOD(k) === "軽め") });
+  list.push({ id: "rate10", label: "評論家", desc: "10本に星をつける", need: 10, rated: true, ks: ORDER });
+  return list;
+})();
+function achProg(a, w) { const got = a.ks.filter(k => w[k] && (!a.rated || w[k].r > 0)).length; const need = a.need || a.ks.length; return { got: Math.min(got, need), need, done: got >= need }; }
+function stats(w) {
+  const ks = Object.keys(w);
+  const minutes = ks.reduce((a, k) => a + MINS(k), 0);
+  const thisWeek = weekKey(today());
+  const weeks = new Set(ks.map(k => w[k].d && weekKey(w[k].d)).filter(Boolean));
+  let streak = 0; const cur = new Date(thisWeek + "T00:00:00Z");
+  if (!weeks.has(thisWeek)) cur.setUTCDate(cur.getUTCDate() - 7);
+  while (weeks.has(cur.toISOString().slice(0, 10))) { streak++; cur.setUTCDate(cur.getUTCDate() - 7); }
+  return { count: ks.length, minutes, week: ks.filter(k => w[k].d && weekKey(w[k].d) === thisWeek).length, streak };
 }
-function fmt(d) { const [, m, dd] = d.split("-"); return `${+m}/${+dd}`; }
-function others(f, g) { return f.s.split("、").filter(x => x !== g).join("・"); }
+function snapshot() { const c = Object.keys(W).length; return { count: c, rank: rankOf(c)[1], ach: new Set(ACH.filter(a => achProg(a, W).done).map(a => a.id)) }; }
+const nextFilm = () => (gachaPick && !W[gachaPick] ? gachaPick : ORDER.find(k => !W[k]));
+const byDateAsc = () => ORDER.filter(k => W[k]).sort((a, b) => (W[a].d || "").localeCompare(W[b].d || "") || a - b);
+const ticketNo = () => Object.fromEntries(byDateAsc().map((k, i) => [k, i + 1]));
 
-function render() {
-  const n = Object.keys(watched).length;
-  $("done").textContent = n;
-  $("barfill").style.width = n + "%";
-  const leftMin = ORDER.filter(k => !watched[k]).reduce((a, k) => a + ((META[k] || {}).min || 0), 0);
-  $("left").textContent = leftMin ? `残り約${Math.round(leftMin / 60)}時間` : "";
-  const nextN = ORDER.find(k => !watched[k]);
-  const nx = $("next");
-  if (nextN) {
-    const f = FILMS[nextN];
-    nx.innerHTML = "";
-    const s = document.createElement("small"); s.textContent = "次に見る1本";
-    const t = document.createElement("strong"); t.textContent = f.t;
-    const mm = META[nextN] || {};
-    const e = document.createElement("em"); e.textContent = `${f.y}年・${f.d}・${f.g}` + (mm.min ? `・約${mm.min}分` : "");
-    nx.append(s, t, e);
-  } else {
-    nx.textContent = "100本ぜんぶ見ました。";
+/* poster tile */
+function hueFor(f) {
+  const d = Math.floor(+f.y / 10) * 10;
+  const base = { 1930: 34, 1940: 30, 1950: 38, 1960: 176, 1970: 18, 1980: 318, 1990: 214, 2000: 262, 2010: 192 }[d] ?? 200;
+  return base + ((f.n * 37) % 24) - 12;
+}
+function poster(f, seen) {
+  const hu = hueFor(f); const old = +f.y < 1960;
+  const p = h("div", "poster" + (seen ? " seen" : ""));
+  const s1 = old ? 28 : 62, l1 = old ? 34 : 38;
+  p.style.background = `linear-gradient(155deg, hsl(${hu} ${s1}% ${l1 + 14}%), hsl(${hu + 24} ${s1}% ${l1 - 14}%))`;
+  const ch = (f.t.match(/[^\s（(「『・]/) || [""])[0];
+  p.append(h("div", "ch", ch), h("div", "yr", f.y));
+  p.setAttribute("aria-hidden", "true");
+  return p;
+}
+
+/* storage: claude.ai db when available, otherwise this browser */
+let col = null; const writing = {};
+function setStatus(msg) { const s = $("status"); s.textContent = msg || ""; s.hidden = !msg; }
+function loadLocal() {
+  try {
+    const v2 = JSON.parse(ls.get("eiga100-v2") || "null");
+    if (v2 && typeof v2 === "object") return v2;
+    const v1 = JSON.parse(ls.get("eiga100-watched-v1") || "null");
+    if (v1 && typeof v1 === "object") { const out = {}; for (const [k, d] of Object.entries(v1)) out[k] = { d, r: 0 }; return out; }
+  } catch (e) {}
+  return {};
+}
+function persist(n) {
+  if (mode === "local") { if (!ls.set("eiga100-v2", JSON.stringify(W))) setStatus("このブラウザでは記録を保存できません（プライベートモードなど）。"); return; }
+  if (mode !== "db" || !col) return;
+  const id = "m" + n; const body = W[n] ? { n: +n, title: FILMS[n].t, date: W[n].d, rating: W[n].r || 0 } : null;
+  writing[id] = (writing[id] || Promise.resolve()).then(() => (body ? col.doc(id).set(body) : col.doc(id).delete())).catch(() => setStatus("保存できませんでした。もう一度タップしてください。"));
+}
+
+/* sound & haptics */
+let actx = null;
+function chime(kind) {
+  if (!sound) return;
+  try {
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    if (actx.state === "suspended") actx.resume();
+    const notes = kind === "big" ? [523.25, 659.25, 783.99, 1046.5, 1318.5] : kind === "tick" ? [1760] : kind === "rate" ? [880, 1174.66] : [659.25, 987.77];
+    const gap = kind === "big" ? .085 : .06, vol = kind === "tick" ? .04 : .11;
+    notes.forEach((fq, i) => {
+      const o = actx.createOscillator(), g = actx.createGain(); const t = actx.currentTime + i * gap;
+      o.type = "triangle"; o.frequency.value = fq; g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + .01); g.gain.exponentialRampToValueAtTime(.001, t + (kind === "tick" ? .06 : .4));
+      o.connect(g).connect(actx.destination); o.start(t); o.stop(t + .45);
+    });
+  } catch (e) {}
+}
+function buzz(p) { try { navigator.vibrate && navigator.vibrate(p); } catch (e) {} }
+function renderSound() { const b = $("soundBtn"); b.innerHTML = sound ? ICON.soundOn : ICON.soundOff; b.setAttribute("aria-pressed", sound ? "true" : "false"); b.setAttribute("aria-label", sound ? "効果音オン" : "効果音オフ"); }
+$("soundBtn").addEventListener("click", () => { sound = !sound; ls.set("eiga100-sound", sound ? "1" : "0"); renderSound(); chime("rate"); });
+
+/* confetti */
+const reduced = (() => { try { return matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e) { return false; } })();
+function burst(x, y, big) {
+  if (reduced) return;
+  const cv = $("fx"); const ctx = cv.getContext("2d"); const dpr = window.devicePixelRatio || 1;
+  cv.width = innerWidth * dpr; cv.height = innerHeight * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const cols = ["#e9b94f", "#ffd98a", "#d63c4a", "#62c895", "#8fb4ff", "#f39ac0", "#ffffff"];
+  const N = big ? 180 : 36; const ps = [];
+  for (let i = 0; i < N; i++) {
+    const fromSide = big && i % 2;
+    const a = big ? (fromSide ? -Math.PI / 3 - Math.random() * .6 : -Math.PI * 2 / 3 + Math.random() * .6) : -Math.PI / 2 + (Math.random() - .5) * 2.4;
+    const sp = big ? 9 + Math.random() * 9 : 3 + Math.random() * 5;
+    const x0 = big ? (fromSide ? -10 : innerWidth + 10) : x, y0 = big ? innerHeight * .75 : y;
+    ps.push({ x: x0, y: y0, vx: Math.cos(a) * sp * (big && !fromSide ? 1 : 1), vy: Math.sin(a) * sp, w: 5 + Math.random() * 6, c: cols[i % cols.length], rot: Math.random() * 6, vr: (Math.random() - .5) * .5, t: 0, wob: Math.random() * 6 });
   }
-  const root = $("groups");
-  root.innerHTML = "";
-  for (const g of GROUPS) {
-    const sec = document.createElement("section");
-    const seen = g.films.filter(f => watched[f.n]).length;
-    const head = document.createElement("div"); head.className = "sec-head";
-    const h2 = document.createElement("h2"); h2.textContent = `${g.mark} ${g.name}`;
-    const note = document.createElement("span"); note.textContent = g.note; h2.append(note);
-    const cnt = document.createElement("div"); cnt.className = "n"; cnt.textContent = `${seen}／${g.films.length}`;
-    head.append(h2, cnt); sec.append(head);
-    const ul = document.createElement("ul");
-    for (const f of g.films) {
-      if (hideDone && watched[f.n]) continue;
-      const li = document.createElement("li");
-      const mm = META[f.n] || {};
-      const row = document.createElement("div");
-      row.className = "row" + (f.n === nextN ? " is-next" : "") + (watched[f.n] ? " is-done" : "");
-      const b = document.createElement("button");
-      b.type = "button"; b.className = "film"; b.id = "film-" + f.n;
-      b.setAttribute("role", "checkbox");
-      b.setAttribute("aria-checked", watched[f.n] ? "true" : "false");
-      b.setAttribute("aria-label", f.t + " を見た");
-      if (!canWrite) b.setAttribute("aria-disabled", "true");
-      const box = document.createElement("span"); box.className = "box"; box.innerHTML = CHECK;
-      b.append(box);
-      b.addEventListener("click", () => toggle(f.n));
-      const det = document.createElement("details");
-      det.id = "memo-" + f.n;
-      if (openMemo.has(f.n)) det.open = true;
-      det.addEventListener("toggle", () => { det.open ? openMemo.add(f.n) : openMemo.delete(f.n); });
-      const sm = document.createElement("summary");
-      const t = document.createElement("span"); t.className = "t"; t.textContent = f.t;
-      const sub = document.createElement("span"); sub.className = "sub";
-      const y = document.createElement("span"); y.className = "y"; y.textContent = f.y;
-      sub.append(y);
-      if (mm.min) { const m1 = document.createElement("span"); m1.className = "y"; m1.textContent = `約${mm.min}分`; sub.append(m1); }
-      if (mm.mood) { const m2 = document.createElement("span"); m2.className = "tag" + (mm.mood === "重め" ? " heavy" : ""); m2.textContent = mm.mood; sub.append(m2); }
-      const d = document.createElement("span"); d.textContent = f.d; sub.append(d);
-      const o = others(f, g.name);
-      if (o) { const os = document.createElement("span"); os.textContent = "ほか " + o; sub.append(os); }
-      if (watched[f.n]) { const w = document.createElement("span"); w.className = "w"; w.textContent = fmt(watched[f.n]) + " に見た"; sub.append(w); }
-      sm.append(t, sub);
-      if (mm.pre) { const mo = document.createElement("span"); mo.className = "more"; mo.textContent = "見る前のメモ"; sm.append(mo); }
-      det.append(sm);
-      if (mm.pre) {
-        const dl = document.createElement("dl"); dl.className = "notes";
-        for (const [k, v] of [["ひとことで", mm.pre], ["背景と作られた経緯", mm.bg], ["どう評価されているか", mm.rep], ["見どころ", mm.points || (mm.eye ? [mm.eye] : null)], ["見方のコツ", mm.tips], ["見たあとに考えたいこと", mm.after]]) {
-          if (!v) continue;
-          const dv = document.createElement("div");
-          const dt = document.createElement("dt"); dt.textContent = k;
-          const dd = document.createElement("dd");
-          if (Array.isArray(v)) {
-            const ul2 = document.createElement("ul"); ul2.className = "pts";
-            for (const x of v) { const li2 = document.createElement("li"); li2.textContent = x; ul2.append(li2); }
-            dd.append(ul2);
-          } else { dd.textContent = v; }
-          dv.append(dt, dd); dl.append(dv);
-        }
-        det.append(dl);
-      }
-      row.append(b, det);
-      li.append(row); ul.append(li);
+  const T = big ? 160 : 60;
+  (function step() {
+    ctx.clearRect(0, 0, innerWidth, innerHeight); let alive = false;
+    for (const p of ps) {
+      if (++p.t > T) continue; alive = true;
+      p.vy += big ? .2 : .22; p.vx *= .985; p.x += p.vx + Math.sin((p.t + p.wob) / 6) * (big ? .8 : 0); p.y += p.vy; p.rot += p.vr;
+      ctx.globalAlpha = Math.max(0, 1 - p.t / T); ctx.fillStyle = p.c;
+      ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.scale(1, Math.cos(p.t / 5 + p.wob)); ctx.fillRect(-p.w / 2, -p.w / 4, p.w, p.w / 2); ctx.restore();
     }
-    if (!ul.children.length) { const p = document.createElement("li"); p.className = "empty"; p.textContent = "このグループは全部見ました。"; ul.append(p); }
-    sec.append(ul); root.append(sec);
+    if (alive) requestAnimationFrame(step); else ctx.clearRect(0, 0, innerWidth, innerHeight);
+  })();
+}
+
+/* count-up */
+function countTo(el, to) {
+  const from = +(el.dataset.v || 0); el.dataset.v = to;
+  if (reduced || from === to) { el.textContent = to; return; }
+  if (to > from) { el.classList.remove("bump"); void el.offsetWidth; el.classList.add("bump"); }
+  const t0 = performance.now(), dur = 700;
+  (function f(t) { const k = Math.min(1, (t - t0) / dur); const e = 1 - Math.pow(1 - k, 3); el.textContent = Math.round(from + (to - from) * e); if (k < 1) requestAnimationFrame(f); })(t0);
+}
+
+/* toast & modal */
+let toastTimer = null;
+function toast(main, sub, rateFor) {
+  const t = $("toast"); t.innerHTML = "";
+  t.append(h("b", "", main)); if (sub) t.append(h("small", "", sub));
+  if (rateFor) t.append(starRow(rateFor, true));
+  t.classList.remove("show"); void t.offsetWidth; t.classList.add("show");
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove("show"), rateFor ? 5500 : 2400);
+}
+function closeModal() { const m = $("modal"); m.classList.remove("show"); setTimeout(() => { if (!m.classList.contains("show")) { m.hidden = true; m.innerHTML = ""; } }, 280); }
+$("modal").addEventListener("click", e => { if (e.target === $("modal")) closeModal(); });
+function modal(kick, title, sub) {
+  const m = $("modal"); m.innerHTML = ""; m.hidden = false;
+  const c = h("div", "mcard");
+  const md2 = h("div", "medal"); md2.innerHTML = ICON.medal;
+  const ok = h("button", "btn gold wide", "やった"); ok.type = "button";
+  c.append(h("div", "kick", kick), md2, h("h3", "", title)); if (sub) c.append(h("p", "", sub)); c.append(ok);
+  m.append(c);
+  requestAnimationFrame(() => m.classList.add("show"));
+  ok.addEventListener("click", closeModal);
+  setTimeout(() => ok.focus({ preventScroll: true }), 60);
+}
+
+/* stars */
+function starRow(n, inToast) {
+  const r = h("div", "rate"); r.setAttribute("role", "group"); r.setAttribute("aria-label", "星をつける");
+  const cur = (W[n] && W[n].r) || 0;
+  for (let i = 1; i <= 5; i++) {
+    const s = h("button", "star" + (i <= cur ? " on" : ""), "★"); s.type = "button"; s.setAttribute("aria-label", `星${i}つ`);
+    s.addEventListener("click", ev => {
+      ev.stopPropagation();
+      [...r.children].forEach((x, j) => { x.classList.toggle("on", j < i); x.classList.remove("pulse"); if (j < i) { x.style.animationDelay = `${j * 50}ms`; void x.offsetWidth; x.classList.add("pulse"); } });
+      setTimeout(() => rate(n, i), 260);
+      if (inToast) setTimeout(() => $("toast").classList.remove("show"), 700);
+    });
+    r.append(s);
+  }
+  return r;
+}
+function rate(n, v) {
+  if (!W[n]) return;
+  const before = snapshot();
+  W[n] = { ...W[n], r: v }; persist(n); chime("rate"); buzz(12);
+  if (v === 5) { fresh = n; }
+  const after = snapshot(); const gained = [...after.ach].filter(id => !before.ach.has(id));
+  renderAll(); if (sheetN === n) renderSheet(n, true);
+  if (v === 5) toast("星5つ。金のチケットになった", FILMS[n].t);
+  if (gained.length) setTimeout(() => { burst(0, 0, true); chime("big"); const a = ACH.find(x => x.id === gained[0]); modal("実績解除", a.label, a.desc); }, 300);
+}
+
+/* watch / unwatch */
+function setWatched(n, on, originEl) {
+  if (on === !!W[n]) return;
+  if (!on) { delete W[n]; persist(n); renderAll(); if (sheetN === n) renderSheet(n, true); toast("取り消しました", FILMS[n].t); return; }
+  const before = snapshot();
+  W[n] = { d: today(), r: 0 }; persist(n); fresh = n;
+  if (gachaPick === n) gachaPick = null;
+  const rc = originEl ? originEl.getBoundingClientRect() : null;
+  renderAll(); if (sheetN === n) renderSheet(n, true);
+  const after = snapshot(); const gained = [...after.ach].filter(id => !before.ach.has(id));
+  const big = after.count === 100 || after.rank !== before.rank || gained.length || after.count % 10 === 0;
+  buzz(big ? [30, 50, 90] : 22);
+  if (big) {
+    chime("big"); burst(0, 0, true);
+    if (after.count === 100) modal("COMPLETE", "100本 見切った", "名作マスター。おめでとう");
+    else if (after.rank !== before.rank) modal("称号アップ", after.rank, `${after.count}本目は『${FILMS[n].t}』`);
+    else if (gained.length) { const a = ACH.find(x => x.id === gained[0]); modal("実績解除", a.label, gained.length > 1 ? `${a.desc}（ほか${gained.length - 1}つ）` : a.desc); }
+    else modal("節目", `${after.count}本`, `残り${100 - after.count}本`);
+    setTimeout(() => toast(`${after.count}本目　星をつける？`, FILMS[n].t, n), 1100);
+  } else {
+    chime("check"); burst(rc ? rc.left + rc.width / 2 : innerWidth / 2, rc ? rc.top + rc.height / 2 : innerHeight / 2, false);
+    const praise = ["ナイス", "また1本", "いい時間だった？", "積み上がってる", "その調子", "名作を1本ストック"][after.count % 6];
+    toast(`${after.count}本目　${praise}`, "星をつけておく？", n);
   }
 }
 
-function setStatus(msg, kind) { const s = $("status"); s.textContent = msg; s.dataset.kind = kind || ""; s.hidden = !msg; }
+/* views */
+const TABS = [["home", "ホーム", "home"], ["list", "リスト", "list"], ["tickets", "チケット", "ticket"], ["awards", "実績", "trophy"]];
+function current() { const v = (location.hash || "#home").slice(1); return TABS.some(t => t[0] === v) ? v : "home"; }
+function route() {
+  const cur = current();
+  for (const [k] of TABS) $("v-" + k).hidden = k !== cur;
+  for (const b of $("tabs").children) b.setAttribute("aria-current", b.dataset.k === cur ? "page" : "false");
+}
+function go(k) { if (k === "list") { listAnim = true; renderList(); } if (current() === k) { window.scrollTo({ top: 0, behavior: "smooth" }); return; } location.hash = k === "home" ? "home" : k; route(); window.scrollTo({ top: 0 }); }
+let lastDot = 0;
+function renderTabs() {
+  const n = $("tabs"); n.innerHTML = "";
+  const c = Object.keys(W).length;
+  for (const [k, label, ic] of TABS) {
+    const b = h("button", "tab"); b.type = "button"; b.dataset.k = k; b.innerHTML = ICON[ic]; b.append(h("span", "", label));
+    if (k === "tickets" && c) { const d = h("span", "dot" + (c > lastDot ? " bump" : ""), c); b.append(d); }
+    b.addEventListener("click", () => go(k));
+    n.append(b);
+  }
+  lastDot = c;
+  route();
+}
+function renderHome() {
+  const st = stats(W); const r = rankOf(st.count), nr = nextRank(st.count);
+  countTo($("cnt"), st.count);
+  $("ringFill").style.strokeDashoffset = (326.73 * (1 - st.count / 100)).toFixed(2);
+  $("rname").textContent = r[1];
+  $("rbar").style.width = nr ? `${((st.count - r[0]) / (nr[0] - r[0])) * 100}%` : "100%";
+  $("rnext").textContent = nr ? `次の「${nr[1]}」まであと${nr[0] - st.count}本` : "すべての称号を手に入れた";
+  const sx = $("stats"); sx.innerHTML = "";
+  [[Math.floor(st.minutes / 60), "時間", "見た時間"], [st.week, "本", "今週"], [st.streak, "週", "連続"]].forEach(([v, u, l], i) => {
+    const d = h("div", "stat" + (i === 2 && st.streak >= 2 ? " hot" : ""));
+    const b = h("b"); if (i === 2 && st.streak >= 1) b.innerHTML = ICON.flame; b.append(document.createTextNode(v + u));
+    d.append(b, h("span", "", l)); sx.append(d);
+  });
+  const nc = $("nextcard"); nc.innerHTML = "";
+  const nk = nextFilm();
+  if (!nk) nc.append(h("div", "pre", "100本ぜんぶ見ました。"));
+  else {
+    const f = FILMS[nk], mm = META[nk] || {};
+    const top = h("div", "nc-top"); const pz = poster(f, false); pz.style.fontSize = "20px";
+    const tx = h("div"); tx.append(h("div", "label" + (gachaPick === nk ? " gacha" : ""), gachaPick === nk ? "今日の1本（ガチャ）" : "次に見る1本"), h("h3", "", f.t), h("div", "meta", `${f.y}年・${f.d}・${f.g}${mm.min ? `・約${mm.min}分` : ""}`));
+    top.append(pz, tx); nc.append(top);
+    if (mm.pre) nc.append(h("div", "pre", mm.pre));
+    const acts = h("div", "acts");
+    const a1 = h("button", "btn", "見る前のメモ"); a1.type = "button"; a1.addEventListener("click", () => openSheet(nk));
+    const a2 = h("button", "btn primary", "見た！"); a2.type = "button"; a2.addEventListener("click", () => setWatched(nk, true, a2));
+    acts.append(a1, a2); nc.append(acts);
+  }
+  const ks = byDateAsc().reverse();
+  $("recentHead").hidden = !ks.length; $("recentCount").textContent = ks.length ? `${ks.length}枚` : "";
+  const rc = $("recent"); rc.innerHTML = ""; const no = ticketNo();
+  ks.slice(0, 8).forEach(k => rc.append(ticket(k, no[k])));
+}
+function renderList() {
+  const seg = $("seg"); seg.innerHTML = "";
+  const opts = [["all", "すべて", ORDER.length]].concat(GROUPS.map(g => [g.key, g.name, g.films.length]));
+  for (const [k, label, n] of opts) {
+    const b = h("button", "", label); b.type = "button"; b.setAttribute("aria-pressed", filter === k ? "true" : "false");
+    const seen = k === "all" ? Object.keys(W).length : GROUPS.find(g => g.key === k).films.filter(f => W[f.n]).length;
+    b.append(h("small", "", `${seen}/${n}`));
+    b.addEventListener("click", () => { filter = k; listAnim = true; renderList(); });
+    seg.append(b);
+  }
+  $("hideSwitch").setAttribute("aria-pressed", hideDone ? "true" : "false");
+  const root = $("lists"); root.innerHTML = ""; root.classList.toggle("anim", listAnim); listAnim = false;
+  const nk = nextFilm(); let shown = 0;
+  for (const g of GROUPS) {
+    if (filter !== "all" && filter !== g.key) continue;
+    const seen = g.films.filter(f => W[f.n]).length;
+    const wrap = h("div"); wrap.style.display = "grid"; wrap.style.gap = "8px";
+    const gh = h("div", "grouphead"); const h3 = h("h3", "", `${g.mark} ${g.name}`); h3.append(h("span", "", g.note));
+    gh.append(h3, h("small", "", `${seen}／${g.films.length}`));
+    const gb = h("div", "gbar"); const gi = h("i"); gi.style.width = `${(seen / g.films.length) * 100}%`; gb.append(gi);
+    const ul = h("ul", "list"); let i = 0;
+    for (const f of g.films) {
+      const done = !!W[f.n];
+      if (hideDone && done) continue;
+      shown++;
+      const mm = META[f.n] || {};
+      const li = h("li", "item" + (done ? " is-done" : "") + (f.n === nk ? " is-next" : ""));
+      li.style.setProperty("--i", Math.min(i++, 14));
+      const op = h("button", "open"); op.type = "button"; op.setAttribute("aria-label", `${f.t}の見る前のメモを開く`);
+      const tx = h("div", "it-txt"); tx.append(h("div", "it-t", f.t));
+      const sub = h("div", "it-sub");
+      if (f.n === nk) sub.append(h("span", "tag next", gachaPick === f.n ? "今日の1本" : "次はこれ"));
+      sub.append(h("span", "mono", f.y));
+      if (mm.min) sub.append(h("span", "mono", `${mm.min}分`));
+      if (mm.mood) sub.append(h("span", "tag" + (mm.mood === "重め" ? " heavy" : mm.mood === "軽め" ? " light" : ""), mm.mood));
+      if (done) { sub.append(h("span", "", `${md(W[f.n].d)}に見た`)); if (W[f.n].r) sub.append(h("span", "stars-mini", "★".repeat(W[f.n].r))); }
+      else sub.append(h("span", "", f.d));
+      tx.append(sub);
+      op.append(poster(f, done), tx);
+      op.addEventListener("click", () => openSheet(f.n));
+      const ck = h("button", "chk" + (fresh === f.n && done ? " pop" : "")); ck.type = "button"; ck.innerHTML = ICON.check; ck.id = "chk-" + f.n;
+      ck.setAttribute("role", "checkbox"); ck.setAttribute("aria-checked", done ? "true" : "false"); ck.setAttribute("aria-label", `${f.t}を見た`);
+      ck.addEventListener("click", () => setWatched(f.n, !W[f.n], ck));
+      li.append(op, ck); ul.append(li);
+    }
+    if (!ul.children.length) ul.append(h("li", "tnote", "このグループは全部見ました。"));
+    wrap.append(gh, gb, ul); root.append(wrap);
+  }
+  $("listCount").textContent = `${shown}本を表示`;
+}
+function ticket(k, no) {
+  const f = FILMS[k]; const w = W[k];
+  const t = h("button", "ticket" + (w.r === 5 ? " gold" : "") + (fresh === k ? " fresh" : "")); t.type = "button";
+  t.setAttribute("aria-label", `${f.t}のチケット`);
+  const top = h("div", "no"); top.append(h("span", "", `No.${String(no || 0).padStart(3, "0")}`), h("span", "", `#${k}`));
+  const td = h("div", "td"); td.append(h("span", "", w.d ? w.d.replace(/-/g, ".") : ""), h("span", "st", w.r ? "★".repeat(w.r) : ""));
+  t.append(top, h("div", "tt", f.t), td);
+  t.addEventListener("click", () => openSheet(k));
+  return t;
+}
+function renderTickets() {
+  const ks = byDateAsc().reverse(); const no = ticketNo();
+  const rated = ks.filter(k => W[k].r);
+  const avg = rated.length ? (rated.reduce((a, k) => a + W[k].r, 0) / rated.length).toFixed(1) : null;
+  $("ticketNote").textContent = ks.length ? `${ks.length}／100枚。星5つをつけると金のチケットになる。${avg ? `平均 ★${avg}` : ""}` : "見た作品がチケットになってここに貯まる。最初の1枚はホームの「見た！」から。";
+  const g = $("tgrid"); g.innerHTML = "";
+  ks.forEach(k => g.append(ticket(k, no[k])));
+  for (let i = 0; i < Math.min(4, 100 - ks.length); i++) g.append(h("div", "ticket empty", `No.${String(ks.length + i + 1).padStart(3, "0")}`));
+  $("copyBtn").hidden = mode !== "local";
+}
+function renderAwards() {
+  const c = Object.keys(W).length; const cur = rankOf(c);
+  const ld = $("ladder"); ld.innerHTML = "";
+  RANKS.forEach(([n, name]) => { const r = h("div", "rl" + (name === cur[1] ? " cur" : c >= n ? " past" : "")); r.append(h("b", "", name), h("span", "", `${n}本`)); ld.append(r); });
+  $("ladderNote").textContent = `いま ${cur[1]}`;
+  const list = ACH.map(a => ({ a, p: achProg(a, W) })).sort((x, y) => (y.p.done - x.p.done) || (y.p.got / y.p.need - x.p.got / x.p.need));
+  $("awardCount").textContent = `${list.filter(x => x.p.done).length}／${ACH.length}`;
+  const box = $("awards"); box.innerHTML = "";
+  for (const { a, p } of list) {
+    const r = h("div", "aw" + (p.done ? " got" : ""));
+    const m = h("div", "medal"); m.innerHTML = ICON.medal;
+    const bar = h("div", "abar"); const bi = h("i"); bi.style.width = `${(p.got / p.need) * 100}%`; bar.append(bi);
+    r.append(m, h("div", "an", a.label), h("div", "ap", p.done ? "達成" : `${p.got}/${p.need}`), bar);
+    box.append(r);
+    r.insertBefore(h("div", "ad", a.desc), bar);
+  }
+}
+function renderAll() { renderHome(); renderList(); renderTickets(); renderAwards(); renderTabs(); setTimeout(() => { fresh = null; }, 900); }
 
-$("hideDone").setAttribute("aria-pressed", hideDone ? "true" : "false");
-$("hideDone").addEventListener("click", () => {
-  hideDone = !hideDone;
-  $("hideDone").setAttribute("aria-pressed", hideDone ? "true" : "false");
-  try { localStorage.setItem("eiga100-hide", hideDone ? "1" : "0"); } catch (e) {}
-  render();
+/* sheet */
+let sheetN = null; let lastFocus = null;
+function renderSheet(n, keepScroll) {
+  const f = FILMS[n], mm = META[n] || {}; const w = W[n];
+  const body = $("sheet").querySelector(".body"); const st = body.scrollTop;
+  const b = $("shBody"); b.innerHTML = "";
+  const head = h("div", "sh-head"); const tx = h("div");
+  const t = h("h3", "", f.t); t.id = "shTitle"; tx.append(t, h("div", "orig", f.o));
+  head.append(poster(f, !!w), tx); b.append(head);
+  const chips = h("div", "chips");
+  [`${f.y}年`, f.d, mm.min ? `約${mm.min}分` : null, mm.mood].filter(Boolean).forEach(x => chips.append(h("span", "chip", x)));
+  f.s.split("、").forEach(x => chips.append(h("span", "chip svc", x)));
+  b.append(chips);
+  const notes = h("div", "notes");
+  const sec = (title, node) => { const d = h("div"); d.append(h("div", "nt", title), node); notes.append(d); };
+  if (mm.pre) sec("ひとことで", h("p", "", mm.pre));
+  if (mm.bg) sec("背景と作られた経緯", h("p", "", mm.bg));
+  if (mm.rep) sec("どう評価されているか", h("p", "", mm.rep));
+  const pts = mm.points || (mm.eye ? [mm.eye] : null);
+  if (pts) { const ul = h("ul"); pts.forEach(x => ul.append(h("li", "", x))); sec("見どころ", ul); }
+  if (mm.tips) sec("見方のコツ", h("p", "", mm.tips));
+  if (mm.after) sec("見たあとに考えたいこと", h("p", "q", mm.after));
+  b.append(notes);
+  if (keepScroll) body.scrollTop = st;
+  const ft = $("shFoot"); ft.innerHTML = "";
+  if (w) {
+    const row = h("div", "row");
+    const left = h("div"); left.append(h("div", "seenline", `${md(w.d)}に見た`), starRow(n, false));
+    const undo = h("button", "btn ghost", "取り消す"); undo.type = "button"; undo.addEventListener("click", () => setWatched(n, false));
+    row.append(left, undo); ft.append(row);
+  } else {
+    const gob = h("button", "btn primary wide", "見た！"); gob.type = "button"; gob.addEventListener("click", () => setWatched(n, true, gob)); ft.append(gob);
+  }
+}
+function openSheet(n) {
+  sheetN = n; lastFocus = document.activeElement; renderSheet(n);
+  const s = $("sheet"), bd = $("backdrop"); s.hidden = false; bd.hidden = false;
+  s.querySelector(".body").scrollTop = 0;
+  requestAnimationFrame(() => requestAnimationFrame(() => { s.classList.add("show"); bd.classList.add("show"); }));
+  document.body.style.overflow = "hidden";
+  setTimeout(() => { const t = $("shTitle"); if (t) { t.tabIndex = -1; t.focus({ preventScroll: true }); } }, 60);
+}
+function closeSheet() {
+  if (sheetN == null) return; sheetN = null;
+  const s = $("sheet"), bd = $("backdrop"); s.classList.remove("show"); bd.classList.remove("show");
+  document.body.style.overflow = "";
+  setTimeout(() => { if (sheetN == null) { s.hidden = true; bd.hidden = true; } }, 380);
+  if (lastFocus && lastFocus.focus) lastFocus.focus({ preventScroll: true });
+}
+$("backdrop").addEventListener("click", closeSheet);
+document.addEventListener("keydown", e => { if (e.key === "Escape") { if (!$("modal").hidden) closeModal(); else closeSheet(); } });
+(() => {
+  const s = $("sheet"); let y0 = null, dy = 0;
+  s.addEventListener("touchstart", e => { y0 = s.querySelector(".body").scrollTop <= 0 ? e.touches[0].clientY : null; dy = 0; }, { passive: true });
+  s.addEventListener("touchmove", e => { if (y0 == null) return; dy = Math.max(0, e.touches[0].clientY - y0); if (dy > 0) { s.style.transition = "none"; s.style.transform = `translateY(${dy}px)`; } }, { passive: true });
+  s.addEventListener("touchend", () => { s.style.transition = ""; s.style.transform = ""; if (y0 != null && dy > 110) closeSheet(); y0 = null; dy = 0; }, { passive: true });
+})();
+
+/* gacha */
+$("gachaBtn").addEventListener("click", () => {
+  const g = GROUPS.find(g => g.films.some(f => !W[f.n])); if (!g) return;
+  const pool = g.films.filter(f => !W[f.n]).map(f => f.n);
+  const m = $("modal"); m.innerHTML = ""; m.hidden = false;
+  const box = h("div", "slot"); const reel = h("div", "reel");
+  const acts = h("div", "acts"); const again = h("button", "btn", "もう一回"); again.type = "button"; const take = h("button", "btn gold", "これにする"); take.type = "button";
+  acts.append(again, take);
+  box.append(h("div", "kick", `${g.name}から1本`), reel, acts); m.append(box);
+  requestAnimationFrame(() => m.classList.add("show"));
+  let pick = null, spinning = false;
+  const show = k => { const f = FILMS[k]; reel.innerHTML = ""; const tx = h("div"); tx.append(h("h3", "", f.t), h("p", "", `${f.y}年・約${(META[k] || {}).min || "?"}分・${(META[k] || {}).mood || ""}`)); reel.append(poster(f, false), tx); };
+  const spin = () => {
+    if (spinning) return; spinning = true;
+    acts.style.opacity = ".35"; acts.style.pointerEvents = "none"; reel.classList.remove("landed");
+    pick = pool[Math.floor(Math.random() * pool.length)];
+    let i = 0; const steps = reduced ? 1 : 18;
+    const tick = () => {
+      i++;
+      if (i < steps) { reel.classList.remove("spin"); void reel.offsetWidth; reel.classList.add("spin"); show(pool[Math.floor(Math.random() * pool.length)]); chime("tick"); buzz(4); setTimeout(tick, 40 + i * i * 1.5); }
+      else { show(pick); reel.classList.remove("spin"); void reel.offsetWidth; reel.classList.add("landed"); chime("big"); buzz([20, 30, 50]); acts.style.opacity = "1"; acts.style.pointerEvents = "auto"; const r = reel.getBoundingClientRect(); burst(r.left + r.width / 2, r.top + r.height / 2, false); spinning = false; }
+    };
+    tick();
+  };
+  again.addEventListener("click", spin);
+  take.addEventListener("click", () => { gachaPick = pick; closeModal(); go("home"); renderAll(); window.scrollTo({ top: 0, behavior: "smooth" }); toast(`今日の1本：${FILMS[pick].t}`, `${FILMS[pick].g}で見られる`); });
+  spin();
 });
 
-const KEY = "eiga100-watched-v1";
-function load() {
-  try { const v = JSON.parse(localStorage.getItem(KEY) || "{}"); return v && typeof v === "object" ? v : {}; }
-  catch (e) { return {}; }
-}
-function save() {
-  try { localStorage.setItem(KEY, JSON.stringify(watched)); return true; }
-  catch (e) { setStatus("このブラウザでは記録を保存できません（プライベートモードなど）。", "warn"); return false; }
-}
-function toggle(n) {
-  if (watched[n]) delete watched[n]; else watched[n] = today();
-  save(); render();
-}
+$("hideSwitch").addEventListener("click", () => { hideDone = !hideDone; ls.set("eiga100-hide", hideDone ? "1" : "0"); listAnim = true; renderList(); });
+
+/* copy record (this-browser mode) */
 function recordText() {
-  const ks = ORDER.filter(k => watched[k]).sort((a, b) => (watched[a] < watched[b] ? -1 : watched[a] > watched[b] ? 1 : 0));
+  const ks = byDateAsc();
   if (!ks.length) return "名作映画100本：まだ0本";
-  return `名作映画100本の記録（${ks.length}本）\n` + ks.map(k => `${watched[k]} #${k} ${FILMS[k].t}`).join("\n");
+  return `名作映画100本の記録（${ks.length}本）\n` + ks.map(k => `${W[k].d} #${k} ${FILMS[k].t}${W[k].r ? " ★" + W[k].r : ""}`).join("\n");
 }
-watched = load();
-canWrite = true;
-setStatus("");
-render();
-const copyBtn = $("copyRec");
-copyBtn.hidden = false;
-copyBtn.addEventListener("click", async () => {
+$("copyBtn").addEventListener("click", async () => {
   const txt = recordText();
-  try { await navigator.clipboard.writeText(txt); setStatus("記録をコピーしました。クロコとの会話に貼ってください。"); }
-  catch (e) {
-    const ta = $("recBox"); ta.hidden = false; ta.value = txt; ta.focus(); ta.select();
-    setStatus("下の枠の文字を長押しでコピーしてください。");
-  }
+  try { await navigator.clipboard.writeText(txt); toast("記録をコピーしました", "クロコとの会話に貼ってください"); }
+  catch (e) { const ta = $("recBox"); ta.hidden = false; ta.value = txt; ta.focus(); ta.select(); toast("下の枠を長押しでコピー"); }
 });
+
+/* boot */
+window.addEventListener("hashchange", route);
+renderSound();
+renderAll();
+(async () => {
+  let db = null;
+  try { db = window.claude && window.claude.use ? await window.claude.use("db") : null; } catch (e) { db = null; }
+  if (!db) { mode = "local"; W = loadLocal(); renderAll(); if (window.claude) setStatus("記録はこのブラウザの中に保存しています。"); return; }
+  mode = "db"; col = db.collection("watched");
+  setStatus("記録を読み込んでいます…");
+  const timer = setTimeout(() => setStatus("記録にまだつながっていません。電波のよい所で開き直してください。"), 10000);
+  col.onSnapshot(snap => {
+    const next = {};
+    for (const d of snap.docs) { const v = d.data(); if (v && v.n) next[v.n] = { d: v.date || "", r: v.rating || 0 }; }
+    W = next;
+    if (!snap.metadata || !snap.metadata.fromCache) { clearTimeout(timer); setStatus(""); }
+    renderAll(); if (sheetN != null) renderSheet(sheetN, true);
+  }, () => { clearTimeout(timer); setStatus("記録を読めませんでした。"); });
+})();
 </script>
 
 </body>
