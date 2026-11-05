@@ -175,6 +175,7 @@ h2.sec small { font-family: var(--f-mono); font-size: .8rem; color: var(--muted)
 .ticket .tt { font-family: var(--f-display); font-weight: 900; font-size: 1rem; line-height: 1.3; }
 .ticket .td { font-family: var(--f-mono); font-size: .7rem; color: #6b5a40; border-top: 1px dashed rgba(42, 31, 18, .3); padding-top: 4px; display: flex; justify-content: space-between; gap: 6px; }
 .ticket .td .st { color: #b07a10; letter-spacing: 1px; }
+.ticket .tc { font-size: .74rem; color: #4a3b25; line-height: 1.55; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .ticket.gold { background: linear-gradient(160deg, #ffe7a3, #e5b54c); }
 .ticket.gold::after { content: ""; position: absolute; top: 0; bottom: 0; width: 45%; left: -60%; background: linear-gradient(100deg, transparent, rgba(255, 255, 255, .7), transparent); animation: shine 2.8s ease-in-out infinite; pointer-events: none; }
 .ticket.fresh { animation: stamp .7s var(--spring) both; }
@@ -245,6 +246,15 @@ h2.sec small { font-family: var(--f-mono); font-size: .8rem; color: var(--muted)
 .star.pulse { animation: bump .45s var(--spring); }
 .star:active { transform: scale(1.35); }
 .seenline { font-size: .82rem; color: var(--done); }
+.mynote { margin-top: 6px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px; display: grid; gap: 8px; }
+.mynote .nt { font-size: .7rem; letter-spacing: .16em; color: var(--gold); font-weight: 700; }
+.mynote textarea { width: 100%; box-sizing: border-box; min-height: 104px; resize: vertical; background: var(--bg2); color: var(--ink); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; font: inherit; font-size: 16px; line-height: 1.7; }
+.mynote textarea::placeholder { color: var(--faint); }
+.mynote textarea:focus { outline: 2px solid var(--gold); outline-offset: 0; border-color: transparent; }
+.mynote .row2 { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.mynote .row2 small { color: var(--muted); font-family: var(--f-mono); font-size: .75rem; }
+.mynote .row2 .btn { padding: 8px 16px; }
+.mynote .saved { color: var(--done); font-size: .78rem; }
 
 /* overlays */
 #fx { position: fixed; inset: 0; pointer-events: none; z-index: 70; width: 100%; height: 100%; }
@@ -384,6 +394,7 @@ const ls = {
 };
 let hideDone = ls.get("eiga100-hide") === "1";
 let sound = ls.get("eiga100-sound") !== "0";
+let seenTickets = +(ls.get("eiga100-seen-tickets") || 0);
 
 const $ = id => document.getElementById(id);
 function h(tag, cls, text) { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
@@ -423,9 +434,10 @@ const ACH = (() => {
   list.push({ id: "heavy10", label: "重めを10本", desc: "見たあと重い作品を10本", need: 10, ks: ORDER.filter(k => MOOD(k) === "重め") });
   list.push({ id: "light10", label: "軽めを10本", desc: "気楽に見られる作品を10本", need: 10, ks: ORDER.filter(k => MOOD(k) === "軽め") });
   list.push({ id: "rate10", label: "評論家", desc: "10本に星をつける", need: 10, rated: true, ks: ORDER });
+  list.push({ id: "note5", label: "語り部", desc: "5本に感想を書く", need: 5, noted: true, ks: ORDER });
   return list;
 })();
-function achProg(a, w) { const got = a.ks.filter(k => w[k] && (!a.rated || w[k].r > 0)).length; const need = a.need || a.ks.length; return { got: Math.min(got, need), need, done: got >= need }; }
+function achProg(a, w) { const got = a.ks.filter(k => w[k] && (!a.rated || w[k].r > 0) && (!a.noted || (w[k].c || "").trim())).length; const need = a.need || a.ks.length; return { got: Math.min(got, need), need, done: got >= need }; }
 function stats(w) {
   const ks = Object.keys(w);
   const minutes = ks.reduce((a, k) => a + MINS(k), 0);
@@ -473,7 +485,7 @@ function loadLocal() {
 function persist(n) {
   if (mode === "local") { if (!ls.set("eiga100-v2", JSON.stringify(W))) setStatus("このブラウザでは記録を保存できません（プライベートモードなど）。"); return; }
   if (mode !== "db" || !col) return;
-  const id = "m" + n; const body = W[n] ? { n: +n, title: FILMS[n].t, date: W[n].d, rating: W[n].r || 0 } : null;
+  const id = "m" + n; const body = W[n] ? { n: +n, title: FILMS[n].t, date: W[n].d, rating: W[n].r || 0, comment: W[n].c || "" } : null;
   writing[id] = (writing[id] || Promise.resolve()).then(() => (body ? col.doc(id).set(body) : col.doc(id).delete())).catch(() => setStatus("保存できませんでした。もう一度タップしてください。"));
 }
 
@@ -589,7 +601,7 @@ function setWatched(n, on, originEl) {
   if (on === !!W[n]) return;
   if (!on) { delete W[n]; persist(n); renderAll(); if (sheetN === n) renderSheet(n, true); toast("取り消しました", FILMS[n].t); return; }
   const before = snapshot();
-  W[n] = { d: today(), r: 0 }; persist(n); fresh = n;
+  W[n] = { d: today(), r: 0, c: "" }; persist(n); fresh = n;
   if (gachaPick === n) gachaPick = null;
   const rc = originEl ? originEl.getBoundingClientRect() : null;
   renderAll(); if (sheetN === n) renderSheet(n, true);
@@ -618,18 +630,21 @@ function route() {
   for (const [k] of TABS) $("v-" + k).hidden = k !== cur;
   for (const b of $("tabs").children) b.setAttribute("aria-current", b.dataset.k === cur ? "page" : "false");
 }
-function go(k) { if (k === "list") { listAnim = true; renderList(); } if (current() === k) { window.scrollTo({ top: 0, behavior: "smooth" }); return; } location.hash = k === "home" ? "home" : k; route(); window.scrollTo({ top: 0 }); }
+function markTicketsSeen() { const c = Object.keys(W).length; if (seenTickets !== c) { seenTickets = c; ls.set("eiga100-seen-tickets", String(c)); renderTabs(); } }
+function go(k) { if (k === "tickets") setTimeout(markTicketsSeen, 0); if (k === "list") { listAnim = true; renderList(); } if (current() === k) { window.scrollTo({ top: 0, behavior: "smooth" }); return; } location.hash = k === "home" ? "home" : k; route(); window.scrollTo({ top: 0 }); }
 let lastDot = 0;
 function renderTabs() {
   const n = $("tabs"); n.innerHTML = "";
   const c = Object.keys(W).length;
   for (const [k, label, ic] of TABS) {
     const b = h("button", "tab"); b.type = "button"; b.dataset.k = k; b.innerHTML = ICON[ic]; b.append(h("span", "", label));
-    if (k === "tickets" && c) { const d = h("span", "dot" + (c > lastDot ? " bump" : ""), c); b.append(d); }
+    if (mode !== "loading" && seenTickets > c) { seenTickets = c; ls.set("eiga100-seen-tickets", String(c)); }
+    const unseen = c - seenTickets;
+    if (k === "tickets" && unseen > 0) { const d = h("span", "dot" + (unseen > lastDot ? " bump" : ""), unseen); b.append(d); }
     b.addEventListener("click", () => go(k));
     n.append(b);
   }
-  lastDot = c;
+  lastDot = c - seenTickets;
   route();
 }
 function renderHome() {
@@ -699,7 +714,7 @@ function renderList() {
       sub.append(h("span", "mono", f.y));
       if (mm.min) sub.append(h("span", "mono", `${mm.min}分`));
       if (mm.mood) sub.append(h("span", "tag" + (mm.mood === "重め" ? " heavy" : mm.mood === "軽め" ? " light" : ""), mm.mood));
-      if (done) { sub.append(h("span", "", `${md(W[f.n].d)}に見た`)); if (W[f.n].r) sub.append(h("span", "stars-mini", "★".repeat(W[f.n].r))); }
+      if (done) { sub.append(h("span", "", `${md(W[f.n].d)}に見た`)); if (W[f.n].r) sub.append(h("span", "stars-mini", "★".repeat(W[f.n].r))); if (W[f.n].c) sub.append(h("span", "tag", "感想")); }
       else sub.append(h("span", "", f.d));
       tx.append(sub);
       op.append(poster(f, done), tx);
@@ -720,7 +735,9 @@ function ticket(k, no) {
   t.setAttribute("aria-label", `${f.t}のチケット`);
   const top = h("div", "no"); top.append(h("span", "", `No.${String(no || 0).padStart(3, "0")}`), h("span", "", `#${k}`));
   const td = h("div", "td"); td.append(h("span", "", w.d ? w.d.replace(/-/g, ".") : ""), h("span", "st", w.r ? "★".repeat(w.r) : ""));
-  t.append(top, h("div", "tt", f.t), td);
+  t.append(top, h("div", "tt", f.t));
+  if (w.c) t.append(h("div", "tc", w.c));
+  t.append(td);
   t.addEventListener("click", () => openSheet(k));
   return t;
 }
@@ -758,6 +775,7 @@ let sheetN = null; let lastFocus = null;
 function renderSheet(n, keepScroll) {
   const f = FILMS[n], mm = META[n] || {}; const w = W[n];
   const body = $("sheet").querySelector(".body"); const st = body.scrollTop;
+  const prevBox = $("myNote"); const draft = prevBox && prevBox.dataset.n == n && prevBox.value !== (w && w.c || "") ? prevBox.value : null;
   const b = $("shBody"); b.innerHTML = "";
   const head = h("div", "sh-head"); const tx = h("div");
   const t = h("h3", "", f.t); t.id = "shTitle"; tx.append(t, h("div", "orig", f.o));
@@ -766,6 +784,7 @@ function renderSheet(n, keepScroll) {
   [`${f.y}年`, f.d, mm.min ? `約${mm.min}分` : null, mm.mood].filter(Boolean).forEach(x => chips.append(h("span", "chip", x)));
   f.s.split("、").forEach(x => chips.append(h("span", "chip svc", x)));
   b.append(chips);
+  if (w) b.append(noteBox(n, draft));
   const notes = h("div", "notes");
   const sec = (title, node) => { const d = h("div"); d.append(h("div", "nt", title), node); notes.append(d); };
   if (mm.pre) sec("ひとことで", h("p", "", mm.pre));
@@ -786,6 +805,33 @@ function renderSheet(n, keepScroll) {
   } else {
     const gob = h("button", "btn primary wide", "見た！"); gob.type = "button"; gob.addEventListener("click", () => setWatched(n, true, gob)); ft.append(gob);
   }
+}
+function noteBox(n, draft) {
+  const w = W[n]; const box = h("div", "mynote");
+  box.append(h("div", "nt", "わたしの感想"));
+  const ta = h("textarea"); ta.id = "myNote"; ta.dataset.n = n; ta.maxLength = 2000; ta.rows = 4;
+  ta.placeholder = "見てどうだった？ 好きな場面、刺さったセリフ、引っかかったところ。ひとことでいい";
+  ta.setAttribute("aria-label", "わたしの感想");
+  ta.value = draft != null ? draft : (w.c || "");
+  const row = h("div", "row2"); const info = h("small", "", ""); const save = h("button", "btn primary", "保存"); save.type = "button";
+  const upd = () => { const dirty = ta.value.trim() !== (W[n] && W[n].c || "").trim(); save.disabled = !dirty; save.style.opacity = dirty ? "1" : ".45"; info.className = dirty ? "" : "saved"; info.textContent = dirty ? `${ta.value.length}字` : (W[n] && W[n].c ? "保存ずみ" : ""); };
+  ta.addEventListener("input", upd);
+  save.addEventListener("click", () => saveNote(n, ta.value));
+  ta.addEventListener("blur", () => { if (!save.disabled) saveNote(n, ta.value); });
+  row.append(info, save); box.append(ta, row); upd();
+  return box;
+}
+function saveNote(n, text) {
+  if (!W[n]) return;
+  const v = text.trim().slice(0, 2000);
+  if (v === (W[n].c || "")) return;
+  const before = snapshot(); const first = !W[n].c && v;
+  W[n] = { ...W[n], c: v }; persist(n); chime("rate"); buzz(12);
+  renderHome(); renderList(); renderTickets(); renderAwards();
+  const ta = $("myNote"); if (ta) ta.dispatchEvent(new Event("input"));
+  toast(v ? (first ? "感想をチケットに書き込んだ" : "感想を更新した") : "感想を消した", FILMS[n].t);
+  const after = snapshot(); const gained = [...after.ach].filter(id => !before.ach.has(id));
+  if (gained.length) setTimeout(() => { burst(0, 0, true); chime("big"); const a = ACH.find(x => x.id === gained[0]); modal("実績解除", a.label, a.desc); }, 300);
 }
 function openSheet(n) {
   sheetN = n; lastFocus = document.activeElement; renderSheet(n);
@@ -846,7 +892,7 @@ $("hideSwitch").addEventListener("click", () => { hideDone = !hideDone; ls.set("
 function recordText() {
   const ks = byDateAsc();
   if (!ks.length) return "名作映画100本：まだ0本";
-  return `名作映画100本の記録（${ks.length}本）\n` + ks.map(k => `${W[k].d} #${k} ${FILMS[k].t}${W[k].r ? " ★" + W[k].r : ""}`).join("\n");
+  return `名作映画100本の記録（${ks.length}本）\n` + ks.map(k => `${W[k].d} #${k} ${FILMS[k].t}${W[k].r ? " ★" + W[k].r : ""}${W[k].c ? "\n  感想：" + W[k].c.replace(/\n/g, " ") : ""}`).join("\n");
 }
 $("copyBtn").addEventListener("click", async () => {
   const txt = recordText();
@@ -855,22 +901,23 @@ $("copyBtn").addEventListener("click", async () => {
 });
 
 /* boot */
-window.addEventListener("hashchange", route);
+window.addEventListener("hashchange", () => { route(); if (current() === "tickets") markTicketsSeen(); });
 renderSound();
 renderAll();
 (async () => {
   let db = null;
   try { db = window.claude && window.claude.use ? await window.claude.use("db") : null; } catch (e) { db = null; }
-  if (!db) { mode = "local"; W = loadLocal(); renderAll(); if (window.claude) setStatus("記録はこのブラウザの中に保存しています。"); return; }
-  mode = "db"; col = db.collection("watched");
+  if (!db) { mode = "local"; W = loadLocal(); if (ls.get("eiga100-seen-tickets") == null) seenTickets = Object.keys(W).length; renderAll(); if (current() === "tickets") markTicketsSeen(); if (window.claude) setStatus("記録はこのブラウザの中に保存しています。"); return; }
+  col = db.collection("watched");
   setStatus("記録を読み込んでいます…");
   const timer = setTimeout(() => setStatus("記録にまだつながっていません。電波のよい所で開き直してください。"), 10000);
   col.onSnapshot(snap => {
     const next = {};
-    for (const d of snap.docs) { const v = d.data(); if (v && v.n) next[v.n] = { d: v.date || "", r: v.rating || 0 }; }
-    W = next;
+    for (const d of snap.docs) { const v = d.data(); if (v && v.n) next[v.n] = { d: v.date || "", r: v.rating || 0, c: v.comment || "" }; }
+    W = next; mode = "db";
+    if (ls.get("eiga100-seen-tickets") == null) { seenTickets = Object.keys(W).length; ls.set("eiga100-seen-tickets", String(seenTickets)); }
     if (!snap.metadata || !snap.metadata.fromCache) { clearTimeout(timer); setStatus(""); }
-    renderAll(); if (sheetN != null) renderSheet(sheetN, true);
+    renderAll(); if (sheetN != null && document.activeElement !== $("myNote")) renderSheet(sheetN, true);
   }, () => { clearTimeout(timer); setStatus("記録を読めませんでした。"); });
 })();
 </script>
